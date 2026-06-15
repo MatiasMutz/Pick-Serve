@@ -1,0 +1,71 @@
+name: Docker Build
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  build-backend:
+    name: Build backend image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: pick-serve/backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-workers:
+    name: Build workers image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build workers
+        uses: docker/build-push-action@v5
+        with:
+          context: ./workers
+          push: false
+          tags: pick-serve/workers:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-frontend:
+    name: Build frontend image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: pick-serve/frontend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  compose-validate:
+    name: Validate docker-compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose file
+        run: docker compose config --quiet

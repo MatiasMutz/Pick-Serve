@@ -57,10 +57,12 @@ def seed():
         db.refresh(t2)
 
         now = datetime.utcnow()
-        r1 = Round(tournament_id=t1.id, name="Cuartos de Final", starts_at=now - timedelta(hours=2), status="open")
-        r2 = Round(tournament_id=t1.id, name="Semifinal", starts_at=now + timedelta(days=1), status="open")
-        r3 = Round(tournament_id=t2.id, name="Cuartos de Final", starts_at=now - timedelta(hours=1), status="open")
-        r4 = Round(tournament_id=t2.id, name="Final", starts_at=now + timedelta(days=2), status="open")
+        # starts_at = cuando cierran los pronósticos (inicio de los partidos).
+        # Deben estar en el futuro para que el scheduler no las cierre inmediatamente.
+        r1 = Round(tournament_id=t1.id, name="Cuartos de Final", starts_at=now + timedelta(hours=6), status="open")
+        r2 = Round(tournament_id=t1.id, name="Semifinal", starts_at=now + timedelta(days=2), status="open")
+        r3 = Round(tournament_id=t2.id, name="Cuartos de Final", starts_at=now + timedelta(hours=8), status="open")
+        r4 = Round(tournament_id=t2.id, name="Final", starts_at=now + timedelta(days=3), status="open")
         db.add_all([r1, r2, r3, r4])
         db.commit()
         for r in [r1, r2, r3, r4]:

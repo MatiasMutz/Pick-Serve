@@ -1,5 +1,6 @@
 """Shared DB and RabbitMQ helpers for all workers."""
 import json
+import os
 import time
 import asyncio
 import logging
@@ -11,8 +12,8 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase, Session
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = "postgresql://postgres:postgres@postgres:5432/pickserve"
-RABBITMQ_URL = "amqp://guest:guest@rabbitmq:5672/"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres:5432/pickserve")
+RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 EXCHANGE_NAME = "pickandserve.events"
 
 

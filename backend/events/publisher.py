@@ -1,14 +1,14 @@
 import json
+import os
 import asyncio
 import logging
-from datetime import datetime
 from typing import Any, Dict
 
 import aio_pika
 
 logger = logging.getLogger(__name__)
 
-RABBITMQ_URL = "amqp://guest:guest@rabbitmq:5672/"
+RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 EXCHANGE_NAME = "pickandserve.events"
 
 

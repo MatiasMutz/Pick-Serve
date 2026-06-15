@@ -1,0 +1,56 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+jobs:
+  integration:
+    name: API Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pickserve
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Run integration tests
+        run: pytest backend/tests/ -v -m "integration" --tb=short
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pickserve
+          RABBITMQ_URL: amqp://guest:guest@localhost:5672/

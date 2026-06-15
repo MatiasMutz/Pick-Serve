@@ -1,6 +1,9 @@
 import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from database import engine
 from models import Base
 from routers import auth, rounds, predictions, admin, ranking, notifications
@@ -11,7 +14,14 @@ logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Pick & Serve API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    seed()
+    yield
+
+
+app = FastAPI(title="Pick & Serve API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,9 +38,6 @@ app.include_router(admin.router)
 app.include_router(ranking.router)
 app.include_router(notifications.router)
 
-@app.on_event("startup")
-def on_startup():
-    seed()
 
 @app.get("/health")
 def health():
