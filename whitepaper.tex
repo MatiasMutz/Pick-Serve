@@ -1,0 +1,732 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{mdframed}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{parskip}
+\usepackage{setspace}
+
+\geometry{
+  top=2.5cm, bottom=2.5cm,
+  left=3cm, right=3cm,
+  headheight=15pt
+}
+
+% Colors
+\definecolor{accent}{RGB}{255, 92, 0}
+\definecolor{navy}{RGB}{0, 27, 61}
+\definecolor{surface}{RGB}{16, 20, 21}
+\definecolor{codeblue}{RGB}{100, 160, 242}
+\definecolor{codegray}{RGB}{140, 144, 153}
+\definecolor{codesurface}{RGB}{29, 32, 34}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+
+% Hyperref setup
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  urlcolor=accent,
+  citecolor=navy,
+  pdfauthor={Pick \& Serve Team},
+  pdftitle={Pick \& Serve – White Paper Técnico},
+}
+
+% Section formatting
+\titleformat{\section}
+  {\large\bfseries\color{navy}}
+  {\thesection.}{0.8em}{}[{\color{accent}\titlerule[1.5pt]}]
+
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{navy}}
+  {\thesubsection.}{0.6em}{}
+
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\color{accent}}
+  {\thesubsubsection.}{0.6em}{}
+
+\titlespacing{\section}{0pt}{18pt}{8pt}
+\titlespacing{\subsection}{0pt}{12pt}{4pt}
+
+% Header / Footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{codegray}{Pick \& Serve — White Paper Técnico}}
+\fancyhead[R]{\small\textcolor{codegray}{Ingeniería de Software II}}
+\fancyfoot[C]{\small\textcolor{codegray}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{accent}\leaders\hrule height \headrulewidth\hfill}}
+
+% Code listings
+\lstset{
+  backgroundcolor=\color{lightgray},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{navy}\bfseries,
+  commentstyle=\color{codegray}\itshape,
+  stringstyle=\color{accent},
+  breaklines=true,
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{codegray},
+  numbers=left,
+  numberstyle=\tiny\color{codegray},
+  numbersep=6pt,
+  captionpos=b,
+  showspaces=false,
+  showtabs=false,
+  tabsize=2,
+}
+
+% Tcolorbox styles
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{infobox}[1][]{
+  colback=navy!5!white,
+  colframe=navy,
+  fonttitle=\bfseries,
+  title=#1,
+  breakable,
+}
+
+\newtcolorbox{accentbox}[1][]{
+  colback=accent!8!white,
+  colframe=accent,
+  fonttitle=\bfseries\color{white},
+  coltitle=white,
+  title=#1,
+  breakable,
+}
+
+\newcommand{\code}[1]{\texttt{\small\color{navy}#1}}
+\newcommand{\event}[1]{\texttt{\small\color{accent}#1}}
+
+\begin{document}
+
+% ──────────────────────────────────────────────────────────────────────────────
+% PORTADA
+% ──────────────────────────────────────────────────────────────────────────────
+\begin{titlepage}
+  \thispagestyle{empty}
+
+  \vspace*{2cm}
+  \begin{center}
+    {\color{accent}\rule{\linewidth}{3pt}}
+    \vspace{0.5cm}
+
+    {\huge\bfseries\color{navy} Pick \& Serve}\\[0.4cm]
+    {\Large\color{accent} Predictor de Partidos ATP}\\[0.3cm]
+    {\large White Paper Técnico}
+
+    \vspace{0.5cm}
+    {\color{accent}\rule{\linewidth}{1pt}}
+
+    \vspace{2cm}
+
+    \begin{tcolorbox}[colback=navy!5, colframe=navy!30, width=0.85\linewidth]
+      \centering
+      \textbf{Resumen Ejecutivo}\\[0.5em]
+      \small
+      Pick \& Serve es una plataforma web de predicción de partidos de tenis ATP,
+      construida sobre una arquitectura orientada a eventos con RabbitMQ como broker de mensajería.
+      El sistema permite a múltiples usuarios competir en un ranking en tiempo real, realizando
+      pronósticos sobre partidos de torneos ATP. El presente documento describe la arquitectura
+      técnica, decisiones de diseño, stack tecnológico y flujos de datos del sistema.
+    \end{tcolorbox}
+
+    \vspace{2.5cm}
+
+    \begin{tabular}{ll}
+      \textbf{Materia:}     & Ingeniería de Software II \\[4pt]
+      \textbf{Tipo:}        & Trabajo Práctico — Prueba de Concepto \\[4pt]
+      \textbf{Tecnologías:} & FastAPI · React · RabbitMQ · PostgreSQL \\[4pt]
+      \textbf{Versión:}     & 1.0.0 \\[4pt]
+      \textbf{Fecha:}       & Junio 2026 \\
+    \end{tabular}
+
+    \vfill
+    {\color{accent}\rule{\linewidth}{2pt}}
+  \end{center}
+\end{titlepage}
+
+% ──────────────────────────────────────────────────────────────────────────────
+% TABLA DE CONTENIDOS
+% ──────────────────────────────────────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Introducción y Contexto}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Descripción del Problema}
+
+Los sistemas de predicción deportiva presentan desafíos técnicos particulares que los hacen
+idóneos para estudiar arquitecturas de software modernas:
+
+\begin{itemize}
+  \item \textbf{Alta concurrencia}: múltiples usuarios enviando predicciones simultáneamente.
+  \item \textbf{Consistencia de datos}: los puntajes deben calcularse correctamente aunque
+        varios eventos ocurran en paralelo.
+  \item \textbf{Actualización en tiempo cuasi-real}: el ranking debe reflejar los resultados
+        apenas se cargan los datos, sin requerir recarga manual.
+  \item \textbf{Desacoplamiento}: las acciones administrativas (cargar resultados, cerrar
+        jornadas) no deben bloquear al usuario final.
+\end{itemize}
+
+\subsection{Propuesta de Valor}
+
+Pick \& Serve aborda estos desafíos implementando una \textbf{arquitectura orientada a eventos
+(Event-Driven Architecture, EDA)} donde cada acción relevante del sistema se traduce en un
+evento publicado en un broker de mensajería, permitiendo que múltiples consumidores reaccionen
+de forma independiente y asíncrona.
+
+\subsection{Alcance del Sistema}
+
+El sistema cubre el flujo completo:
+\begin{enumerate}
+  \item Autenticación de jugadores y administradores.
+  \item Carga de pronósticos por parte de los jugadores sobre partidos abiertos.
+  \item Carga de resultados por parte del administrador.
+  \item Puntuación automática via workers asíncronos.
+  \item Notificaciones a jugadores sobre resultados y cierres de jornada.
+  \item Ranking global actualizado automáticamente.
+\end{enumerate}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Arquitectura General del Sistema}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Visión de Alto Nivel}
+
+El sistema se organiza en cinco capas principales que se comunican de forma desacoplada:
+
+\begin{accentbox}[Capas del Sistema]
+\begin{enumerate}
+  \item \textbf{Frontend (React + TypeScript)} — Interfaz web responsive (SPA).
+  \item \textbf{Backend API (FastAPI)} — Endpoints REST, lógica de negocio, publicación de eventos.
+  \item \textbf{Broker de Mensajería (RabbitMQ)} — Exchange topic para routing de eventos.
+  \item \textbf{Workers Asíncronos (Python)} — Consumidores especializados: scoring, notificaciones, ranking.
+  \item \textbf{Persistencia (PostgreSQL)} — Base de datos relacional con SQLAlchemy ORM.
+\end{enumerate}
+\end{accentbox}
+
+\subsection{Diagrama de Componentes}
+
+\begin{center}
+\begin{tabular}{|c|}
+  \hline
+  \textbf{Cliente Browser} \\
+  React SPA (Vite + TypeScript) \\
+  \hline
+\end{tabular}
+$\downarrow$ HTTP/REST
+\begin{tabular}{|c|}
+  \hline
+  \textbf{API Server} \\
+  FastAPI + Uvicorn \\
+  \hline
+\end{tabular}
+$\rightarrow$ AMQP $\rightarrow$
+\begin{tabular}{|c|}
+  \hline
+  \textbf{RabbitMQ} \\
+  Exchange: topic \\
+  \hline
+\end{tabular}
+
+\vspace{0.5cm}
+\small
+RabbitMQ distribuye eventos a tres colas paralelas:
+\event{scoring.queue} · \event{notifications.queue} · \event{ranking.queue}
+\end{center}
+
+\subsection{Principios de Diseño Aplicados}
+
+\begin{description}
+  \item[Separación de responsabilidades (SoC)] Cada worker tiene una única responsabilidad bien definida.
+  \item[Alta cohesión / Bajo acoplamiento] Los módulos interactúan únicamente via contratos de eventos (mensajes JSON).
+  \item[Idempotencia] Los workers pueden procesar el mismo mensaje múltiples veces sin generar efectos adversos.
+  \item[Resiliencia] El broker persiste mensajes; si un worker cae, los mensajes se encolan y procesan al recuperarse.
+\end{description}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Arquitectura Orientada a Eventos}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Motivación para EDA}
+
+La arquitectura orientada a eventos fue seleccionada por varias razones fundamentales:
+
+\begin{infobox}[¿Por qué EDA?]
+En un sistema donde un solo resultado de partido impacta en: puntajes de \textbf{N} usuarios,
+generación de \textbf{N} notificaciones, y recalculo del ranking global — procesar todo de forma
+síncrona generaría una latencia de respuesta proporcional a N. Con EDA, el administrador recibe
+confirmación inmediata y el procesamiento ocurre en paralelo en background.
+\end{infobox}
+
+\subsection{Exchange y Routing Keys}
+
+Se utiliza un \textbf{exchange de tipo topic} en RabbitMQ, que permite routing flexible basado
+en patrones:
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+  \toprule
+  \textbf{Evento} & \textbf{Routing Key} & \textbf{Productores} \\
+  \midrule
+  Resultado cargado    & \code{match.result.loaded} & API (Admin endpoint) \\
+  Scores actualizados  & \code{scores.updated}      & Scoring Worker (encadenamiento) \\
+  Jornada cerrada      & \code{round.closed}        & API (Admin endpoint) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Flujo Completo: Carga de Resultado}
+
+\begin{enumerate}
+  \item El administrador POST a \code{/api/admin/matches/\{id\}/result}.
+  \item El backend persiste el resultado en PostgreSQL y publica:
+    \begin{lstlisting}[language=Python, caption=Publicación del evento]
+await publisher.publish(
+    routing_key="match.result.loaded",
+    body={
+        "match_id": match.id,
+        "winner_player_id": winner,
+        "tournament_id": match.tournament_id,
+    }
+)
+    \end{lstlisting}
+  \item RabbitMQ enruta el mensaje a \textbf{tres colas en paralelo} (fan-out mediante bindings):
+    \begin{itemize}
+      \item \textbf{Scoring Worker}: calcula puntos para cada predicción del partido.
+        Publica \event{scores.updated} al finalizar.
+      \item \textbf{Notification Worker}: genera notificación para cada jugador que predijo.
+      \item \textbf{(inicio del chain)} El Scoring Worker encadena hacia Ranking.
+    \end{itemize}
+  \item El \textbf{Ranking Worker} consume \event{scores.updated} y recalcula posiciones globales.
+\end{enumerate}
+
+\subsection{Encadenamiento de Eventos (Event Chaining)}
+
+Un patrón clave en el diseño es el encadenamiento: el Scoring Worker no solo actualiza puntajes,
+sino que al completar su trabajo publica un nuevo evento \event{scores.updated}. Esto permite
+que el Ranking Worker sea un consumidor desacoplado que no necesita saber nada de partidos o
+predicciones — solo reacciona cuando los scores cambian.
+
+Este patrón es análogo al patrón \textbf{Saga} en microservicios.
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Stack Tecnológico}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Backend — FastAPI}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+  \toprule
+  \textbf{Tecnología} & \textbf{Justificación} \\
+  \midrule
+  FastAPI 0.111   & Framework async nativo en Python, tipado via Pydantic, documentación OpenAPI automática. \\
+  SQLAlchemy 2.0  & ORM moderno con soporte async, migrations, y type-safe queries. \\
+  Pydantic 2.7    & Validación de datos en entrada/salida, serialización automática. \\
+  Uvicorn         & Servidor ASGI de alto rendimiento basado en uvloop. \\
+  aio-pika 9.4    & Cliente RabbitMQ async para Python, soporta reconexión automática. \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{0.5cm}
+
+La API expone 6 routers RESTful:
+
+\begin{itemize}
+  \item \code{/api/auth} — Login y listado de usuarios
+  \item \code{/api/rounds} — Jornadas y partidos
+  \item \code{/api/predictions} — CRUD de pronósticos
+  \item \code{/api/admin} — Carga de resultados, cierre de jornadas
+  \item \code{/api/ranking} — Tabla de posiciones global
+  \item \code{/api/notifications} — Alertas por usuario
+\end{itemize}
+
+\subsection{Frontend — React + TypeScript}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+  \toprule
+  \textbf{Tecnología} & \textbf{Justificación} \\
+  \midrule
+  React 18.3       & Biblioteca UI con virtual DOM, hooks, componentes reutilizables. \\
+  TypeScript 5.4   & Tipado estático end-to-end, mejor DX y refactoring seguro. \\
+  Vite 5.2         & Build tool ultra-rápido con HMR, optimización de bundles. \\
+  React Router 6   & Routing client-side declarativo. \\
+  Tailwind CSS 3   & Utility-first CSS con design tokens personalizados. \\
+  Material Symbols & Iconografía consistente con sistema de diseño Google Material 3. \\
+  \bottomrule
+\end{tabularx}
+
+\subsubsection{Diseño Visual — Sistema de Tokens}
+
+El frontend implementa un sistema de diseño oscuro inspirado en Material You (Material Design 3)
+con los siguientes tokens de color primarios:
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+  \toprule
+  \textbf{Token} & \textbf{Valor Hex} & \textbf{Uso} \\
+  \midrule
+  \code{surface}             & \#101415 & Fondo principal \\
+  \code{surface-container}   & \#1d2022 & Cards y paneles \\
+  \code{orange-accent}       & \#FF5C00 & CTAs, highlights, énfasis \\
+  \code{secondary-container} & \#ff5e07 & Nav activo, botones primarios \\
+  \code{on-surface}          & \#e0e3e5 & Texto principal \\
+  \code{outline-variant}     & \#44474e & Bordes y separadores \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Broker de Mensajería — RabbitMQ}
+
+RabbitMQ fue seleccionado sobre alternativas como Kafka o Redis Pub/Sub por:
+
+\begin{itemize}
+  \item \textbf{Persistencia de mensajes}: garantía de entrega incluso con workers caídos.
+  \item \textbf{Exchange tipo topic}: permite routing flexible con routing keys jerárquicas.
+  \item \textbf{Management UI}: interfaz visual para monitoreo de colas y mensajes.
+  \item \textbf{Mature ecosystem}: cliente \code{aio-pika} con soporte async nativo.
+  \item \textbf{Reconexión automática}: el patrón base en \code{workers/base.py} maneja
+        desconexiones transparentemente.
+\end{itemize}
+
+\subsection{Base de Datos — PostgreSQL}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+  \toprule
+  \textbf{Tabla} & \textbf{Descripción} \\
+  \midrule
+  \code{users}         & Jugadores y administradores \\
+  \code{tournaments}   & Torneos ATP (ej: US Open, Wimbledon) \\
+  \code{rounds}        & Jornadas de predicción por torneo \\
+  \code{matches}       & Partidos individuales, con flag \code{is\_final} \\
+  \code{predictions}   & Pronósticos usuario-partido con puntos calculados \\
+  \code{rankings}      & Posición y puntos acumulados por usuario \\
+  \code{notifications} & Alertas por usuario con estado de lectura \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Infraestructura — Docker Compose}
+
+El sistema completo se orquesta con Docker Compose en 5 servicios:
+
+\begin{lstlisting}[language=bash, caption=Servicios Docker Compose]
+services:
+  frontend    # React/Nginx  - puerto 80
+  backend     # FastAPI      - puerto 8000
+  workers     # Python workers (scoring + notif + ranking + scheduler)
+  postgres    # PostgreSQL   - puerto 5432
+  rabbitmq    # RabbitMQ     - AMQP 5672, Management UI 15672
+\end{lstlisting}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Modelo de Datos}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Entidades Principales}
+
+\subsubsection{Predicciones y Scoring}
+
+El modelo de puntuación es simple y auditable:
+
+\begin{infobox}[Regla de Puntuación]
+\begin{itemize}
+  \item \textbf{Pronóstico correcto}: +10 puntos base.
+  \item \textbf{Partido marcado como FINAL} (\code{is\_final = true}): +2 puntos adicionales.
+  \item \textbf{Pronóstico incorrecto}: 0 puntos (sin penalización).
+  \item El campo \code{predictions.points} es \code{NULL} hasta que el partido se resuelve.
+\end{itemize}
+\end{infobox}
+
+\subsubsection{Estado de Partidos y Jornadas}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+  \toprule
+  \textbf{Entidad} & \textbf{Estados posibles} \\
+  \midrule
+  \code{Round.status}  & \code{open} $\to$ \code{closed} \\
+  \code{Match.status}  & \code{pending} $\to$ \code{finished} \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Los usuarios solo pueden cargar o modificar pronósticos cuando la jornada está \code{open}
+y el partido está \code{pending}. Este invariante se valida en el backend.
+
+\subsection{Flujo de Estados}
+
+\begin{center}
+\small
+\textbf{Jornada:} \texttt{open} $\xrightarrow{\text{Admin cierra}}$ \texttt{closed}
+
+\vspace{0.3cm}
+
+\textbf{Partido:} \texttt{pending} $\xrightarrow{\text{Admin carga resultado}}$ \texttt{finished}
+
+\vspace{0.3cm}
+
+\textbf{Predicción:} \texttt{points = NULL} $\xrightarrow{\text{Scoring worker}}$ \texttt{points = N}
+\end{center}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Workers Asíncronos}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Arquitectura de Workers}
+
+Todos los workers heredan de una clase base \code{BaseWorker} definida en
+\code{workers/base.py}, que encapsula:
+\begin{itemize}
+  \item Conexión y reconexión automática a RabbitMQ via \code{aio-pika}.
+  \item Configuración del exchange y bindings.
+  \item Manejo de errores y logging.
+\end{itemize}
+
+\subsection{Scoring Worker}
+
+\textbf{Consume:} \event{match.result.loaded}
+
+\textbf{Responsabilidades:}
+\begin{enumerate}
+  \item Obtiene todas las predicciones del partido resuelto.
+  \item Para cada predicción, calcula los puntos según las reglas de negocio.
+  \item Actualiza \code{predictions.points} en PostgreSQL.
+  \item Publica \event{scores.updated} para triggear el recálculo de ranking.
+\end{enumerate}
+
+\subsection{Notification Worker}
+
+\textbf{Consume:} \event{match.result.loaded}, \event{round.closed}
+
+\textbf{Responsabilidades:}
+\begin{enumerate}
+  \item Por \event{match.result.loaded}: genera una notificación por cada usuario que predijo
+        el partido, indicando si acertó o no.
+  \item Por \event{round.closed}: genera una notificación global a todos los jugadores
+        activos indicando el cierre de la jornada.
+\end{enumerate}
+
+\subsection{Ranking Worker}
+
+\textbf{Consume:} \event{scores.updated}
+
+\textbf{Responsabilidades:}
+\begin{enumerate}
+  \item Agrega puntos totales por usuario desde la tabla \code{predictions}.
+  \item Calcula conteo de aciertos y total de predicciones evaluadas.
+  \item Actualiza (UPSERT) la tabla \code{rankings} con posiciones recalculadas.
+  \item Las posiciones se asignan por \code{RANK() OVER (ORDER BY total\_points DESC)}.
+\end{enumerate}
+
+\subsection{Scheduler}
+
+El sistema incluye un \textbf{scheduler} (\code{workers/scheduler.py}) que monitorea
+automáticamente el estado de las jornadas y puede cerrarlas cuando vence su deadline,
+publicando el evento \event{round.closed} sin intervención manual del administrador.
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Interfaz de Usuario}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Diseño Responsive}
+
+El frontend implementa un layout adaptativo con dos modos:
+
+\begin{description}
+  \item[Mobile (\textless 1024px)] Top bar de 56px con logo + usuario, contenido en full-width,
+        bottom nav redondeada de 70px con 4 tabs (Dashboard, Rankings, Alertas, Stats).
+  \item[Desktop ($\geq$ 1024px)] Sidebar fija de 256px a la izquierda con navegación vertical,
+        contenido principal con padding lateral de 32px.
+\end{description}
+
+\subsection{Vistas del Sistema}
+
+\subsubsection{Login}
+Selección de cuenta simplificada — múltiples usuarios pre-seeded para demostración.
+Identifica automáticamente cuentas de administrador.
+
+\subsubsection{Dashboard de Pronósticos}
+Vista principal del jugador. Muestra:
+\begin{itemize}
+  \item Barra de progreso de pronósticos completados en la jornada activa.
+  \item Cards de partidos con selector radio para elegir ganador.
+  \item Indicadores visuales de partidos bloqueados, finalizados y puntos obtenidos.
+\end{itemize}
+
+\subsubsection{Rankings}
+\begin{itemize}
+  \item Podio visual para top 3 (oro, plata, bronce) con gradientes de color.
+  \item Lista completa con posición, iniciales, aciertos y puntos.
+  \item Auto-actualización cada 5 segundos (polling).
+  \item Indicador de live con timestamp de última actualización.
+\end{itemize}
+
+\subsubsection{Estadísticas Personales}
+\begin{itemize}
+  \item Ring chart SVG de precisión general.
+  \item Grid de 4 métricas: puntos totales, posición global, aciertos, evaluados.
+  \item Historial completo de pronósticos con estado (pendiente/correcto/incorrecto).
+\end{itemize}
+
+\subsubsection{Notificaciones}
+\begin{itemize}
+  \item Lista cronológica de alertas por tipo (resultado, cierre de jornada).
+  \item Iconografía codificada por color: verde (acierto), rojo (cierre), naranja (info).
+  \item Marcado de leído al hacer clic. Badge de no leídos en el nav.
+\end{itemize}
+
+\subsubsection{Panel de Administración}
+\begin{itemize}
+  \item Métricas: jornadas abiertas y total de partidos pendientes.
+  \item Tarjeta explicativa de la arquitectura de eventos (transparencia técnica).
+  \item Por cada jornada: botón de cierre y cards por partido con botones de resultado.
+  \item Al cargar resultado: dispara el pipeline de eventos completo.
+\end{itemize}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Patrones y Decisiones de Diseño}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Patrón Publisher/Subscriber}
+
+El sistema implementa Pub/Sub clásico donde:
+\begin{itemize}
+  \item El \textbf{publisher} (API) no sabe quiénes son los subscribers.
+  \item Los \textbf{subscribers} (workers) no saben quién publicó el evento.
+  \item El \textbf{broker} (RabbitMQ) actúa como intermediario desacoplado.
+\end{itemize}
+
+\subsection{Patrón CQRS Ligero}
+
+Si bien no es CQRS estricto, el sistema separa semánticamente:
+\begin{itemize}
+  \item \textbf{Commands}: acciones que modifican estado (POST/PUT endpoints, events).
+  \item \textbf{Queries}: lecturas de solo lectura (\code{GET /ranking}, \code{GET /predictions}).
+\end{itemize}
+
+\subsection{Idempotencia en Workers}
+
+Los workers están diseñados para ser idempotentes: procesar el mismo evento dos veces
+produce el mismo resultado que procesarlo una vez. Esto es crítico para garantizar
+consistencia ante fallos y reenvíos del broker.
+
+\subsection{Polling vs WebSocket}
+
+La actualización del ranking utiliza polling cada 5 segundos desde el frontend.
+Esta decisión fue deliberada:
+\begin{itemize}
+  \item \textbf{Simplicidad}: no requiere infraestructura de WebSocket.
+  \item \textbf{Suficiencia}: el ranking no requiere actualización sub-segundo.
+  \item \textbf{Correctness}: cada fetch garantiza datos frescos de PostgreSQL.
+\end{itemize}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Deployment e Infraestructura}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Contenedores Docker}
+
+Cada servicio tiene su propio \code{Dockerfile} optimizado:
+
+\begin{itemize}
+  \item \textbf{Frontend}: Multi-stage build — Node para compilar, Nginx Alpine para servir.
+        El bundle resultante es de $\sim$196KB (60KB gzip).
+  \item \textbf{Backend}: Python 3.x con dependencias en \code{requirements.txt}.
+  \item \textbf{Workers}: Imagen compartida base con el backend, punto de entrada diferente.
+  \item \textbf{PostgreSQL}: Imagen oficial con volumen persistente.
+  \item \textbf{RabbitMQ}: Imagen con management plugin habilitado.
+\end{itemize}
+
+\subsection{Configuración Nginx}
+
+El frontend incluye configuración Nginx (\code{nginx.conf}) con:
+\begin{itemize}
+  \item Serving de archivos estáticos con cache headers.
+  \item Fallback a \code{index.html} para client-side routing (SPA mode).
+  \item Gzip compression habilitada.
+\end{itemize}
+
+\subsection{CI/CD}
+
+El repositorio incluye GitHub Actions configurados en \code{.github/} para
+automatizar el pipeline de integración y deployment continuo.
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Análisis de Calidad}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Puntos Fuertes}
+
+\begin{enumerate}
+  \item \textbf{Escalabilidad horizontal}: los workers son stateless y se pueden escalar
+        simplemente aumentando instancias — RabbitMQ distribuye la carga automáticamente.
+  \item \textbf{Resiliencia ante fallos}: si un worker cae, los mensajes permanecen en la
+        cola y se procesan al reiniciar. No hay pérdida de datos.
+  \item \textbf{Observabilidad}: la Management UI de RabbitMQ permite ver en tiempo real
+        el estado de colas, mensajes pendientes y throughput.
+  \item \textbf{Type safety end-to-end}: TypeScript en frontend + Pydantic en backend
+        minimizan errores en tiempo de ejecución.
+  \item \textbf{Developer Experience}: Vite HMR para desarrollo frontend, FastAPI auto-docs
+        en \code{/docs} para testing de API.
+\end{enumerate}
+
+\subsection{Limitaciones y Trabajo Futuro}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+  \toprule
+  \textbf{Limitación} & \textbf{Mejora Propuesta} \\
+  \midrule
+  Polling de ranking (5s)  & Migrar a WebSocket o SSE para updates push. \\
+  Auth por selección de user & Implementar JWT con contraseñas hasheadas (bcrypt). \\
+  Sin tests automatizados  & Agregar pytest para backend, Vitest para frontend. \\
+  Workers en monolito      & Separar en microservicios independientes con su propio repositorio. \\
+  Sin rate limiting        & Implementar límites por IP/usuario en la API. \\
+  \bottomrule
+\end{tabularx}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Conclusiones}
+% ──────────────────────────────────────────────────────────────────────────────
+
+Pick \& Serve demuestra en forma concreta cómo una \textbf{arquitectura orientada a eventos}
+resuelve el problema del acoplamiento temporal en sistemas con múltiples efectos secundarios.
+
+La elección de RabbitMQ como broker permitió implementar un fan-out genuino — un único
+evento de resultado de partido dispara concurrentemente scoring, notificaciones y (vía
+encadenamiento) actualización de ranking — sin que ninguno de estos procesos conozca
+la existencia de los demás.
+
+El stack tecnológico (FastAPI + React + PostgreSQL) representa una elección pragmática
+que prioriza productividad sin sacrificar performance, y es representativo de lo que se
+usa en la industria para sistemas SaaS de escala mediana.
+
+Como prueba de concepto, el sistema cumple su objetivo pedagógico: evidenciar en código
+ejecutable los beneficios del desacoplamiento, la asincronía y la comunicación via
+mensajes en sistemas distribuidos modernos.
+
+\vspace{1cm}
+\begin{center}
+{\color{accent}\rule{0.6\linewidth}{1.5pt}}\\[0.3cm]
+{\small\color{codegray} Pick \& Serve · Ingeniería de Software II · 2026}
+\end{center}
+
+\end{document}
