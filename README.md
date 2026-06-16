@@ -570,10 +570,24 @@ Proyecto Railway
 
 ### Variables de entorno para Railway
 
+**Backend, workers y scheduler:**
 ```env
 DATABASE_URL=postgresql://user:pass@host:5432/pickserve
 RABBITMQ_URL=amqp://user:pass@host.cloudamqp.com/vhost
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:admin@pickserve.com
 ```
+
+**Frontend** (build-time + runtime):
+```env
+# Build arg / variable al deployar el frontend:
+VITE_API_URL=https://tu-backend.up.railway.app
+
+# No setear BACKEND_PROXY_URL en Railway (solo aplica en docker-compose local).
+```
+
+> El frontend en Railway es un servicio **separado**: no existe el hostname `backend` de Docker. La app llama al backend por su URL pública (`VITE_API_URL`). Railway ya provee HTTPS en el edge — no hace falta puerto 3443 ni certificado local.
 
 > Las variables se configuran en Railway → Service → Variables
 

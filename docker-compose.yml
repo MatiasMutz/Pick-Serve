@@ -116,6 +116,9 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: /api
+    environment:
+      BACKEND_PROXY_URL: http://backend:8000
+      ENABLE_LOCAL_HTTPS: "true"
     ports:
       - "3000:80"
       - "3443:443"
