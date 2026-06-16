@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api';
-import type { AuthUser, Match, Round } from '../../types';
+import type { AuthUser, Round } from '../../types';
+import { IconLock, IconLogout } from '../../components/Icons';
 
 interface Props {
   user: AuthUser;
@@ -11,14 +12,13 @@ interface Props {
 export default function AdminDashboard({ user, onLogout, showToast }: Props) {
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState<number | null>(null);
+  const [processing, setProcessing] = useState<string | null>(null);
 
   const load = async () => {
     try {
-      const r = await api.getOpenRounds();
-      setRounds(r);
+      setRounds(await api.getOpenRounds());
     } catch {
-      showToast('Error cargando partidos', 'error');
+      showToast('Error cargando datos', 'error');
     } finally {
       setLoading(false);
     }
@@ -27,10 +27,11 @@ export default function AdminDashboard({ user, onLogout, showToast }: Props) {
   useEffect(() => { load(); }, []);
 
   const handleResult = async (matchId: number, winner: string) => {
-    setProcessing(matchId);
+    const key = `m${matchId}`;
+    setProcessing(key);
     try {
       await api.loadResult(matchId, winner);
-      showToast('✅ Resultado cargado · evento pub/sub disparado!');
+      showToast('Resultado cargado — evento publicado en RabbitMQ');
       await load();
     } catch (e: any) {
       showToast(e.message || 'Error', 'error');
@@ -40,10 +41,11 @@ export default function AdminDashboard({ user, onLogout, showToast }: Props) {
   };
 
   const handleCloseRound = async (roundId: number) => {
-    setProcessing(-roundId);
+    const key = `r${roundId}`;
+    setProcessing(key);
     try {
       await api.closeRound(roundId);
-      showToast('🔒 Jornada cerrada · notificaciones enviadas!');
+      showToast('Jornada cerrada — notificaciones enviadas');
       await load();
     } catch (e: any) {
       showToast(e.message || 'Error', 'error');
@@ -53,85 +55,90 @@ export default function AdminDashboard({ user, onLogout, showToast }: Props) {
   };
 
   return (
-    <>
-      <div className="app-container">
-        <div className="header">
-          <div className="header-logo">Pick <span style={{ color: 'var(--accent)' }}>&</span> Serve <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginLeft: 4 }}>ADMIN</span></div>
-          <button className="btn btn-secondary btn-sm" onClick={onLogout}>Salir</button>
+    <div className="app-shell">
+      <div className="topbar">
+        <div>
+          <div className="topbar-logo">Pick <span>&</span> Serve</div>
+          <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginTop: 1 }}>Panel de Administracion</div>
         </div>
+        <div className="topbar-right">
+          <button className="btn btn-ghost btn-sm" onClick={onLogout}>
+            <IconLogout size={14} /> Salir
+          </button>
+        </div>
+      </div>
 
+      <div className="page" style={{ paddingTop: 16 }}>
         {/* Event architecture info */}
-        <div className="card" style={{ marginBottom: 20, borderColor: 'rgba(201,241,53,0.2)' }}>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            🔌 Arquitectura de Eventos
-          </p>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            Al cargar un resultado → se publica <code style={{ color: 'var(--accent)', background: 'rgba(201,241,53,0.1)', padding: '1px 4px', borderRadius: 3 }}>match.result.loaded</code> → fan-out a 3 workers en paralelo → scoring-worker publica <code style={{ color: 'var(--accent)', background: 'rgba(201,241,53,0.1)', padding: '1px 4px', borderRadius: 3 }}>scores.updated</code> → ranking-worker recalcula posiciones.
-          </p>
+        <div className="event-info-card">
+          <div className="event-info-title">Arquitectura de eventos</div>
+          <div className="event-info-text">
+            Al cargar un resultado se publica{' '}
+            <span className="event-code">match.result.loaded</span> en el exchange topic de RabbitMQ.
+            Tres workers lo consumen en paralelo: scoring, notifications y el encadenamiento hacia ranking via{' '}
+            <span className="event-code">scores.updated</span>.
+          </div>
         </div>
 
         {loading ? (
           <div className="loading"><div className="spinner" /> Cargando...</div>
         ) : rounds.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">🏟️</div>
-            <div className="empty-state-text">No hay jornadas abiertas</div>
-          </div>
+          <div className="empty">No hay jornadas abiertas</div>
         ) : (
           rounds.map(round => (
             <div key={round.id} style={{ marginBottom: 24 }}>
-              <div className="tournament-header">
-                <span className="tournament-icon">🎾</span>
-                <div className="tournament-info">
-                  <div className="tournament-name">{round.tournament_name}</div>
+              <div className="round-header">
+                <div className="round-header-left">
+                  <div className="round-tournament">{round.tournament_name}</div>
                   <div className="round-name">{round.name}</div>
                 </div>
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={() => handleCloseRound(round.id)}
-                  disabled={processing === -round.id}
+                  disabled={processing === `r${round.id}`}
                 >
-                  {processing === -round.id ? '⏳' : '🔒 Cerrar'}
+                  {processing === `r${round.id}` ? (
+                    <><div className="spinner" /> Cerrando...</>
+                  ) : (
+                    <><IconLock size={13} /> Cerrar</>
+                  )}
                 </button>
               </div>
 
               {round.matches.map(match => (
                 <div key={match.id} className="admin-match-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Partido #{match.id}</span>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {match.is_final && <span className="final-badge">FINAL +2 bonus</span>}
-                      <span style={{ fontSize: 11, color: match.status === 'finished' ? 'var(--success)' : 'var(--text-muted)' }}>
-                        {match.status === 'finished' ? '✅ Finalizado' : '⏳ Pendiente'}
+                  <div className="admin-match-header">
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>
+                        {match.player_a} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs</span> {match.player_b}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        Partido #{match.id}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {match.is_final && <span className="final-tag">FINAL +2</span>}
+                      <span className={`pill ${match.status === 'finished' ? 'pill-open' : 'pill-pending'}`}>
+                        {match.status === 'finished' ? 'Finalizado' : 'Pendiente'}
                       </span>
-                    </div>
-                  </div>
-
-                  <div className="match-players" style={{ marginBottom: 0 }}>
-                    <div className={`player-name ${match.winner_player_id === 'player_a' ? 'winner' : ''}`}>
-                      {match.player_a}
-                    </div>
-                    <div className="vs-badge">VS</div>
-                    <div className={`player-name ${match.winner_player_id === 'player_b' ? 'winner' : ''}`} style={{ textAlign: 'right' }}>
-                      {match.player_b}
                     </div>
                   </div>
 
                   {match.status === 'pending' && (
                     <div className="admin-result-btns">
                       <button
-                        className="result-btn"
+                        className={`result-btn ${match.winner_player_id === 'player_a' ? 'winner' : ''}`}
                         onClick={() => handleResult(match.id, 'player_a')}
-                        disabled={processing === match.id}
+                        disabled={processing === `m${match.id}`}
                       >
-                        {processing === match.id ? '⏳ Procesando...' : '← Ganó este'}
+                        {processing === `m${match.id}` ? 'Procesando...' : `Gano ${match.player_a}`}
                       </button>
                       <button
-                        className="result-btn"
+                        className={`result-btn ${match.winner_player_id === 'player_b' ? 'winner' : ''}`}
                         onClick={() => handleResult(match.id, 'player_b')}
-                        disabled={processing === match.id}
+                        disabled={processing === `m${match.id}`}
                       >
-                        {processing === match.id ? '⏳ Procesando...' : 'Ganó este →'}
+                        {processing === `m${match.id}` ? 'Procesando...' : `Gano ${match.player_b}`}
                       </button>
                     </div>
                   )}
@@ -140,9 +147,7 @@ export default function AdminDashboard({ user, onLogout, showToast }: Props) {
             </div>
           ))
         )}
-
-        <div style={{ height: 20 }} />
       </div>
-    </>
+    </div>
   );
 }

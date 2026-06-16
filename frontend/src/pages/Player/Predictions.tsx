@@ -15,10 +15,7 @@ export default function Predictions({ userId, showToast }: Props) {
 
   const load = async () => {
     try {
-      const [r, p] = await Promise.all([
-        api.getOpenRounds(),
-        api.getMyPredictions(userId),
-      ]);
+      const [r, p] = await Promise.all([api.getOpenRounds(), api.getMyPredictions(userId)]);
       setRounds(r);
       setPredictions(p);
     } catch {
@@ -30,18 +27,14 @@ export default function Predictions({ userId, showToast }: Props) {
 
   useEffect(() => { load(); }, []);
 
-  const getPrediction = (matchId: number) =>
-    predictions.find(p => p.match_id === matchId);
+  const getPred = (matchId: number) => predictions.find(p => p.match_id === matchId);
 
   const handlePredict = async (matchId: number, winner: string) => {
     setSaving(matchId);
     try {
       const pred = await api.createPrediction(userId, matchId, winner);
-      setPredictions(prev => {
-        const filtered = prev.filter(p => p.match_id !== matchId);
-        return [...filtered, pred];
-      });
-      showToast('¡Pronóstico guardado! 🎾');
+      setPredictions(prev => [...prev.filter(p => p.match_id !== matchId), pred]);
+      showToast('Pronóstico guardado');
     } catch (e: any) {
       showToast(e.message || 'Error guardando pronóstico', 'error');
     } finally {
@@ -49,13 +42,17 @@ export default function Predictions({ userId, showToast }: Props) {
     }
   };
 
-  if (loading) return <div className="loading"><div className="spinner" /> Cargando jornadas...</div>;
+  if (loading) return <div className="loading"><div className="spinner" /> Cargando...</div>;
 
   if (rounds.length === 0) {
     return (
-      <div className="empty-state">
-        <div className="empty-state-icon">🏟️</div>
-        <div className="empty-state-text">No hay jornadas abiertas por ahora</div>
+      <div className="empty">
+        <div className="empty-icon">
+          <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+            <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+          </svg>
+        </div>
+        No hay jornadas abiertas en este momento
       </div>
     );
   }
@@ -64,65 +61,61 @@ export default function Predictions({ userId, showToast }: Props) {
     <div>
       {rounds.map(round => (
         <div key={round.id} style={{ marginBottom: 24 }}>
-          <div className="tournament-header">
-            <span className="tournament-icon">🎾</span>
-            <div className="tournament-info">
-              <div className="tournament-name">{round.tournament_name}</div>
+          <div className="round-header">
+            <div className="round-header-left">
+              <div className="round-tournament">{round.tournament_name}</div>
               <div className="round-name">{round.name}</div>
             </div>
-            <span className={`round-status ${round.status}`}>
-              {round.status === 'open' ? 'ABIERTA' : 'CERRADA'}
+            <span className={`pill pill-${round.status}`}>
+              <span className="pill-dot" />
+              {round.status === 'open' ? 'Activa' : 'Cerrada'}
             </span>
           </div>
 
           {round.matches.map(match => {
-            const pred = getPrediction(match.id);
+            const pred = getPred(match.id);
             const isSaving = saving === match.id;
+            const finished = match.status === 'finished';
 
             return (
-              <div key={match.id} className={`match-card ${match.status === 'finished' ? 'finished' : ''}`}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    {match.status === 'finished' ? '✅ Finalizado' : '⏳ Pendiente'}
+              <div key={match.id} className="match-card">
+                <div className="match-meta">
+                  <span className="match-status-text">
+                    {finished ? 'Finalizado' : 'Pendiente'}
                   </span>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    {match.is_final && <span className="final-badge">FINAL</span>}
-                    {pred && (
-                      <span className={`points-pill ${pred.points === null ? 'pending' : pred.points > 0 ? 'correct' : 'wrong'}`}>
-                        {pred.points === null ? '—' : `+${pred.points} pts`}
+                    {match.is_final && <span className="final-tag">FINAL +2</span>}
+                    {pred && pred.points !== null && (
+                      <span className={`pts-badge ${pred.points > 0 ? 'correct' : 'wrong'}`}>
+                        {pred.points > 0 ? `+${pred.points} pts` : '0 pts'}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="match-players">
-                  <div className={`player-name ${pred?.predicted_winner === 'player_a' ? 'predicted' : ''} ${match.winner_player_id === 'player_a' ? 'winner' : ''}`}>
-                    {match.player_a}
-                  </div>
-                  <div className="vs-badge">VS</div>
-                  <div className={`player-name ${pred?.predicted_winner === 'player_b' ? 'predicted' : ''} ${match.winner_player_id === 'player_b' ? 'winner' : ''}`} style={{ textAlign: 'right' }}>
-                    {match.player_b}
-                  </div>
-                </div>
+                <div className="match-options">
+                  {(['player_a', 'player_b'] as const).map(side => {
+                    const playerName = side === 'player_a' ? match.player_a : match.player_b;
+                    const isSelected = pred?.predicted_winner === side;
+                    const isWinner   = match.winner_player_id === side;
+                    const isLoser    = finished && match.winner_player_id && match.winner_player_id !== side;
 
-                {match.status === 'pending' && round.status === 'open' && (
-                  <div className="prediction-buttons">
-                    <button
-                      className={`prediction-btn ${pred?.predicted_winner === 'player_a' ? 'selected' : ''}`}
-                      onClick={() => handlePredict(match.id, 'player_a')}
-                      disabled={isSaving}
-                    >
-                      {isSaving && pred?.predicted_winner !== 'player_a' ? '...' : '← Gana este'}
-                    </button>
-                    <button
-                      className={`prediction-btn ${pred?.predicted_winner === 'player_b' ? 'selected' : ''}`}
-                      onClick={() => handlePredict(match.id, 'player_b')}
-                      disabled={isSaving}
-                    >
-                      {isSaving && pred?.predicted_winner !== 'player_b' ? '...' : 'Gana este →'}
-                    </button>
-                  </div>
-                )}
+                    return (
+                      <button
+                        key={side}
+                        className="match-option"
+                        onClick={() => !finished && round.status === 'open' && handlePredict(match.id, side)}
+                        disabled={finished || round.status === 'closed' || isSaving}
+                      >
+                        <div className={`radio-circle ${isWinner ? 'winner' : isSelected ? 'selected' : ''}`} />
+                        <span className={`option-name ${isWinner ? 'winner' : isSelected ? 'selected' : isLoser ? 'loser' : ''}`}>
+                          {playerName}
+                        </span>
+                        {isSaving && isSelected && <div className="spinner" />}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}

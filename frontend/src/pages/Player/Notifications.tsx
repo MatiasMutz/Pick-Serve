@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import type { Notification } from '../../types';
+import { IconBell, IconCheck, IconLock, IconRefresh } from '../../components/Icons';
 
 interface Props {
   userId: number;
@@ -10,11 +11,17 @@ interface Props {
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr + 'Z').getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'ahora';
-  if (m < 60) return `hace ${m}m`;
+  if (m < 1) return 'Ahora';
+  if (m < 60) return `Hace ${m}m`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `hace ${h}h`;
-  return `hace ${Math.floor(h / 24)}d`;
+  if (h < 24) return `Hace ${h}h`;
+  return `Hace ${Math.floor(h / 24)}d`;
+}
+
+function notifIcon(msg: string) {
+  if (msg.includes('cerrada') || msg.includes('Cerrada')) return { Icon: IconLock, type: 'error' };
+  if (msg.includes('Acertaste') || msg.includes('acertaste')) return { Icon: IconCheck, type: 'success' };
+  return { Icon: IconBell, type: 'info' };
 }
 
 export default function Notifications({ userId, onUnreadChange }: Props) {
@@ -26,8 +33,6 @@ export default function Notifications({ userId, onUnreadChange }: Props) {
       const n = await api.getNotifications(userId);
       setNotifs(n);
       onUnreadChange(n.filter(x => !x.read).length);
-    } catch {
-      // silent
     } finally {
       setLoading(false);
     }
@@ -38,44 +43,46 @@ export default function Notifications({ userId, onUnreadChange }: Props) {
   const handleRead = async (id: number) => {
     const notif = notifs.find(n => n.id === id);
     if (!notif || notif.read) return;
-    try {
-      await api.markNotificationRead(id);
-      setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-      onUnreadChange(notifs.filter(x => !x.read && x.id !== id).length);
-    } catch {
-      // silent
-    }
+    await api.markNotificationRead(id).catch(() => null);
+    setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    onUnreadChange(notifs.filter(x => !x.read && x.id !== id).length);
   };
 
   if (loading) return <div className="loading"><div className="spinner" /> Cargando...</div>;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span className="section-title" style={{ margin: 0 }}>Notificaciones</span>
-        <button className="btn btn-secondary btn-sm" onClick={load}>Refrescar</button>
+      <div className="refresh-row">
+        <p className="label" style={{ margin: 0 }}>Notificaciones</p>
+        <button className="btn btn-ghost btn-sm" onClick={load}>
+          <IconRefresh size={13} /> Actualizar
+        </button>
       </div>
 
       {notifs.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">🔔</div>
-          <div className="empty-state-text">Sin notificaciones por ahora</div>
+        <div className="empty">
+          <div className="empty-icon"><IconBell size={36} /></div>
+          Sin notificaciones por ahora
         </div>
       ) : (
         <div className="card">
-          {notifs.map(n => (
-            <div
-              key={n.id}
-              className={`notification-item ${n.read ? 'read' : 'unread'}`}
-              onClick={() => handleRead(n.id)}
-            >
-              <div className="notification-dot" style={{ opacity: n.read ? 0 : 1 }} />
-              <div>
-                <div className="notification-msg">{n.message}</div>
-                <div className="notification-time">{timeAgo(n.created_at)}</div>
+          {notifs.map(n => {
+            const { Icon, type } = notifIcon(n.message);
+            return (
+              <div
+                key={n.id}
+                className={`notif-item ${n.read ? 'read' : ''}`}
+                onClick={() => handleRead(n.id)}
+              >
+                <div className={`notif-icon ${type}`}><Icon size={16} /></div>
+                <div className="notif-body">
+                  <div className="notif-msg">{n.message}</div>
+                  <div className="notif-time">{timeAgo(n.created_at)}</div>
+                </div>
+                {!n.read && <div className="notif-unread-dot" />}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

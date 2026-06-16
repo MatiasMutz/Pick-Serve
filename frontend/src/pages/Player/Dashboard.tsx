@@ -4,6 +4,7 @@ import Predictions from './Predictions';
 import Ranking from './Ranking';
 import Notifications from './Notifications';
 import Stats from './Stats';
+import { IconHome, IconTrophy, IconBell, IconChart, IconLogout } from '../../components/Icons';
 
 interface Props {
   user: AuthUser;
@@ -11,34 +12,36 @@ interface Props {
   showToast: (msg: string, type?: 'success' | 'error') => void;
 }
 
-type Tab = 'predictions' | 'ranking' | 'notifications' | 'stats';
+type Tab = 'home' | 'ranking' | 'notifications' | 'stats';
 
-const tabs: { id: Tab; label: string; icon: string }[] = [
-  { id: 'predictions', label: 'Jornada', icon: '🎾' },
-  { id: 'ranking', label: 'Ranking', icon: '🏆' },
-  { id: 'notifications', label: 'Alertas', icon: '🔔' },
-  { id: 'stats', label: 'Stats', icon: '📊' },
+const tabs: { id: Tab; label: string; Icon: React.ComponentType<{ size?: number }> }[] = [
+  { id: 'home',          label: 'Inicio',        Icon: IconHome },
+  { id: 'ranking',       label: 'Ranking',       Icon: IconTrophy },
+  { id: 'notifications', label: 'Alertas',       Icon: IconBell },
+  { id: 'stats',         label: 'Stats',         Icon: IconChart },
 ];
 
 export default function PlayerDashboard({ user, onLogout, showToast }: Props) {
-  const [tab, setTab] = useState<Tab>('predictions');
+  const [tab, setTab] = useState<Tab>('home');
   const [unread, setUnread] = useState(0);
 
   return (
-    <>
-      <div className="app-container">
-        <div className="header">
-          <div className="header-logo">Pick <span style={{ color: 'var(--accent)' }}>&</span> Serve</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user.name.split(' ')[0]}</span>
-            <button className="btn btn-secondary btn-sm" onClick={onLogout}>Salir</button>
-          </div>
+    <div className="app-shell">
+      <div className="topbar">
+        <div className="topbar-logo">Pick <span>&</span> Serve</div>
+        <div className="topbar-right">
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user.name.split(' ')[0]}</span>
+          <button className="btn btn-ghost btn-sm" onClick={onLogout} title="Salir">
+            <IconLogout size={14} />
+          </button>
         </div>
+      </div>
 
-        {tab === 'predictions' && <Predictions userId={user.user_id} showToast={showToast} />}
-        {tab === 'ranking' && <Ranking />}
+      <div className="page" style={{ paddingTop: 16 }}>
+        {tab === 'home'          && <Predictions userId={user.user_id} showToast={showToast} />}
+        {tab === 'ranking'       && <Ranking />}
         {tab === 'notifications' && <Notifications userId={user.user_id} onUnreadChange={setUnread} />}
-        {tab === 'stats' && <Stats userId={user.user_id} />}
+        {tab === 'stats'         && <Stats userId={user.user_id} />}
       </div>
 
       <nav className="nav">
@@ -48,18 +51,14 @@ export default function PlayerDashboard({ user, onLogout, showToast }: Props) {
             className={`nav-item ${tab === t.id ? 'active' : ''}`}
             onClick={() => setTab(t.id)}
           >
-            <span style={{ fontSize: 20, position: 'relative' }}>
-              {t.icon}
-              {t.id === 'notifications' && unread > 0 && (
-                <span className="badge" style={{ position: 'absolute', top: -4, right: -6, fontSize: 9, minWidth: 16, height: 16 }}>
-                  {unread > 9 ? '9+' : unread}
-                </span>
-              )}
-            </span>
+            <t.Icon size={20} />
+            {t.id === 'notifications' && unread > 0 && (
+              <span className="nav-badge">{unread > 9 ? '9+' : unread}</span>
+            )}
             {t.label}
           </button>
         ))}
       </nav>
-    </>
+    </div>
   );
 }
