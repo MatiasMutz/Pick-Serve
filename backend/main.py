@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine
 from models import Base
-from routers import auth, rounds, predictions, admin, ranking, notifications
+from routers import auth, rounds, predictions, admin, ranking, notifications, push
 from seed import seed
 
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +37,7 @@ app.include_router(predictions.router)
 app.include_router(admin.router)
 app.include_router(ranking.router)
 app.include_router(notifications.router)
+app.include_router(push.router)
 
 
 @app.get("/health")

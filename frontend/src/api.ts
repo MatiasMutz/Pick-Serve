@@ -1,6 +1,11 @@
 // Local/Docker: '/api' (nginx proxy). Railway: set VITE_API_URL to the backend public URL at build time.
 const BASE = import.meta.env.VITE_API_URL ?? '/api';
 
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -54,4 +59,19 @@ export const api = {
     request<{ ok: boolean; round_id: number }>(`/admin/rounds/${round_id}/close`, {
       method: 'POST',
     }),
+
+  getVapidPublicKey: () => request<{ public_key: string }>('/push/vapid-public-key'),
+
+  subscribePush: (user_id: number, subscription: PushSubscriptionPayload) =>
+    request<{ ok: boolean }>('/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ user_id, subscription }),
+    }),
+
+  unsubscribePush: (user_id: number, endpoint: string) =>
+    request<{ ok: boolean }>('/push/subscribe', {
+      method: 'DELETE',
+      body: JSON.stringify({ user_id, endpoint }),
+    }),
 };
+

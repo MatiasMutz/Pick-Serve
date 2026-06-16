@@ -5,3 +5,4 @@ psycopg2-binary==2.9.9
 aio-pika==9.4.1
 pydantic==2.7.1
 python-dateutil==2.9.0
+pywebpush==2.0.1

@@ -22,6 +22,7 @@ import aio_pika
 
 from base import get_rabbitmq_connection, declare_exchange, get_db
 from models import Match, Prediction, Notification, User, Round
+from push import send_push_to_user
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,12 +49,16 @@ async def handle_match_result(payload: dict):
         match_label = f"{match.player_a} vs {match.player_b}"
         predictions = db.query(Prediction).filter(Prediction.match_id == match_id).all()
 
+        push_targets: list[tuple[int, str, str]] = []
+
         for pred in predictions:
             correct = pred.predicted_winner == winner
             if correct:
                 msg = f"✅ ¡Acertaste! Tu pronóstico fue correcto en {match_label}."
+                title = "¡Acertaste!"
             else:
                 msg = f"❌ No acertaste en {match_label}. ¡Suerte la próxima!"
+                title = "Resultado del partido"
 
             notif = Notification(
                 user_id=pred.user_id,
@@ -61,9 +66,14 @@ async def handle_match_result(payload: dict):
                 created_at=datetime.utcnow(),
             )
             db.add(notif)
+            push_targets.append((pred.user_id, title, msg))
             logger.info(f"🔔 Notification for user_id={pred.user_id}: {msg}")
 
         db.commit()
+
+        for user_id, title, msg in push_targets:
+            send_push_to_user(db, user_id, title, msg)
+
         logger.info(f"✅ Created {len(predictions)} notifications for match {match_id}")
     finally:
         db.close()
@@ -90,6 +100,15 @@ async def handle_round_closed(payload: dict):
             db.add(notif)
 
         db.commit()
+
+        for user in users:
+            send_push_to_user(
+                db,
+                user.id,
+                "Jornada cerrada",
+                msg,
+            )
+
         logger.info(f"✅ Created {len(users)} round-closed notifications for '{round_name}'")
     finally:
         db.close()

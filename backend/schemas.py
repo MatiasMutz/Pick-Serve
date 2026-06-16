@@ -69,3 +69,22 @@ class NotificationOut(BaseModel):
     created_at: datetime
     read: bool
     model_config = {"from_attributes": True}
+
+class PushKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+class PushSubscriptionData(BaseModel):
+    endpoint: str
+    keys: PushKeys
+
+class PushSubscribeRequest(BaseModel):
+    user_id: int
+    subscription: PushSubscriptionData
+
+class PushUnsubscribeRequest(BaseModel):
+    user_id: int
+    endpoint: str
+
+class VapidPublicKeyOut(BaseModel):
+    public_key: str

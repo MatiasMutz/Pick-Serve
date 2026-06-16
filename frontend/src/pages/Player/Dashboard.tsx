@@ -4,6 +4,7 @@ import Predictions from './Predictions';
 import Ranking from './Ranking';
 import Notifications from './Notifications';
 import Stats from './Stats';
+import PushSetup from '../../components/PushSetup';
 
 interface Props {
   user: AuthUser;
@@ -124,7 +125,10 @@ export default function PlayerDashboard({ user, onLogout, showToast }: Props) {
           </div>
         </div>
 
-        <div className="px-4 lg:px-8 pt-4 lg:pt-6">
+        <div className="px-4 lg:px-8 pt-4 lg:pt-6 flex flex-col gap-4">
+          {tab === 'notifications' && (
+            <PushSetup userId={user.user_id} showToast={showToast} />
+          )}
           {tab === 'home'          && <Predictions userId={user.user_id} showToast={showToast} />}
           {tab === 'ranking'       && <Ranking />}
           {tab === 'notifications' && <Notifications userId={user.user_id} onUnreadChange={setUnread} />}
