@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import type { Notification } from '../../types';
-import { IconBell, IconCheck, IconLock, IconRefresh } from '../../components/Icons';
 
 interface Props {
   userId: number;
@@ -18,10 +17,12 @@ function timeAgo(dateStr: string) {
   return `Hace ${Math.floor(h / 24)}d`;
 }
 
-function notifIcon(msg: string) {
-  if (msg.includes('cerrada') || msg.includes('Cerrada')) return { Icon: IconLock, type: 'error' };
-  if (msg.includes('Acertaste') || msg.includes('acertaste')) return { Icon: IconCheck, type: 'success' };
-  return { Icon: IconBell, type: 'info' };
+function notifMeta(msg: string): { icon: string; color: string; bg: string } {
+  if (msg.includes('cerrada') || msg.includes('Cerrada'))
+    return { icon: 'lock', color: 'text-red-400', bg: 'bg-red-500/10' };
+  if (msg.includes('Acertaste') || msg.includes('acertaste'))
+    return { icon: 'check_circle', color: 'text-green-400', bg: 'bg-green-500/10' };
+  return { icon: 'notifications', color: 'text-orange-accent', bg: 'bg-orange-accent/10' };
 }
 
 export default function Notifications({ userId, onUnreadChange }: Props) {
@@ -48,38 +49,57 @@ export default function Notifications({ userId, onUnreadChange }: Props) {
     onUnreadChange(notifs.filter(x => !x.read && x.id !== id).length);
   };
 
-  if (loading) return <div className="loading"><div className="spinner" /> Cargando...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-16 text-on-surface-variant text-sm">
+        <div className="spinner" /> Cargando...
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="refresh-row">
-        <p className="label" style={{ margin: 0 }}>Notificaciones</p>
-        <button className="btn btn-ghost btn-sm" onClick={load}>
-          <IconRefresh size={13} /> Actualizar
+    <div className="flex flex-col gap-4">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold tracking-widest uppercase text-on-surface-variant">Notificaciones</p>
+        <button
+          onClick={load}
+          className="flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-on-surface transition-colors px-3 py-1.5 rounded-lg hover:bg-surface-container-high"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>refresh</span>
+          Actualizar
         </button>
       </div>
 
       {notifs.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon"><IconBell size={36} /></div>
+        <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant text-sm gap-3">
+          <span className="material-symbols-outlined opacity-30" style={{ fontSize: 48 }}>notifications_off</span>
           Sin notificaciones por ahora
         </div>
       ) : (
-        <div className="card">
+        <div className="bg-surface-container border border-outline-variant/30 rounded-xl overflow-hidden">
           {notifs.map(n => {
-            const { Icon, type } = notifIcon(n.message);
+            const { icon, color, bg } = notifMeta(n.message);
             return (
               <div
                 key={n.id}
-                className={`notif-item ${n.read ? 'read' : ''}`}
                 onClick={() => handleRead(n.id)}
+                className={`flex items-start gap-3 px-4 py-4 border-b border-outline-variant/20 last:border-0 cursor-pointer hover:bg-surface-container-high transition-colors ${
+                  n.read ? 'opacity-50' : ''
+                }`}
               >
-                <div className={`notif-icon ${type}`}><Icon size={16} /></div>
-                <div className="notif-body">
-                  <div className="notif-msg">{n.message}</div>
-                  <div className="notif-time">{timeAgo(n.created_at)}</div>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${bg}`}>
+                  <span className={`material-symbols-outlined ${color}`} style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>
+                    {icon}
+                  </span>
                 </div>
-                {!n.read && <div className="notif-unread-dot" />}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-on-surface leading-snug">{n.message}</div>
+                  <div className="text-xs text-on-surface-variant mt-1">{timeAgo(n.created_at)}</div>
+                </div>
+                {!n.read && (
+                  <div className="w-2 h-2 rounded-full bg-orange-accent flex-shrink-0 mt-2" />
+                )}
               </div>
             );
           })}
