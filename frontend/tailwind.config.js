@@ -1,0 +1,61 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        surface: '#101415',
+        'surface-dim': '#101415',
+        'surface-container-lowest': '#0b0f10',
+        'surface-container-low': '#191c1e',
+        'surface-container': '#1d2022',
+        'surface-container-high': '#272a2c',
+        'surface-container-highest': '#323537',
+        'surface-variant': '#323537',
+        'on-surface': '#e0e3e5',
+        'on-surface-variant': '#c4c6cf',
+        background: '#101415',
+        primary: '#b1c7f2',
+        'primary-container': '#001b3d',
+        'on-primary': '#193053',
+        'on-primary-container': '#6f84ac',
+        secondary: '#ffb59a',
+        'secondary-container': '#ff5e07',
+        'on-secondary': '#5a1b00',
+        'on-secondary-container': '#531900',
+        tertiary: '#4cd6ff',
+        'tertiary-container': '#001f28',
+        'on-tertiary-container': '#0090b0',
+        error: '#ffb4ab',
+        'error-container': '#93000a',
+        'on-error': '#690005',
+        outline: '#8e9099',
+        'outline-variant': '#44474e',
+        'inverse-surface': '#e0e3e5',
+        'orange-accent': '#FF5C00',
+        'navy-accent': '#001B3D',
+      },
+      borderRadius: {
+        DEFAULT: '0.125rem',
+        sm: '0.25rem',
+        md: '0.375rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
+        '2xl': '1rem',
+        full: '9999px',
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      boxShadow: {
+        'glow-orange': '0 0 15px rgba(255, 92, 0, 0.4)',
+        'glow-orange-sm': '0 0 8px rgba(255, 92, 0, 0.3)',
+      },
+      maxWidth: {
+        'container': '600px',
+      },
+    },
+  },
+  plugins: [],
+};
+

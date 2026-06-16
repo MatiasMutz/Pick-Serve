@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { AuthUser } from './types';
-import TennisBg from './components/TennisBg';
 import { ToastContainer, useToast } from './components/Toast';
 import Login from './pages/Login';
 import PlayerDashboard from './pages/Player/Dashboard';
@@ -26,7 +25,6 @@ function App() {
 
   return (
     <>
-      <TennisBg />
       <ToastContainer toasts={toasts} />
       <Routes>
         <Route

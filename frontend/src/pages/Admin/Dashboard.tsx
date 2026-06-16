@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import type { AuthUser, Round } from '../../types';
-import { IconLock, IconLogout } from '../../components/Icons';
 
 interface Props {
   user: AuthUser;
@@ -54,100 +53,199 @@ export default function AdminDashboard({ user, onLogout, showToast }: Props) {
     }
   };
 
-  return (
-    <div className="app-shell">
-      <div className="topbar">
-        <div>
-          <div className="topbar-logo">Pick <span>&</span> Serve</div>
-          <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginTop: 1 }}>Panel de Administracion</div>
-        </div>
-        <div className="topbar-right">
-          <button className="btn btn-ghost btn-sm" onClick={onLogout}>
-            <IconLogout size={14} /> Salir
-          </button>
-        </div>
-      </div>
+  const totalMatches = rounds.reduce((acc, r) => acc + r.matches.length, 0);
+  const pendingMatches = rounds.reduce((acc, r) => acc + r.matches.filter(m => m.status === 'pending').length, 0);
 
-      <div className="page" style={{ paddingTop: 16 }}>
-        {/* Event architecture info */}
-        <div className="event-info-card">
-          <div className="event-info-title">Arquitectura de eventos</div>
-          <div className="event-info-text">
-            Al cargar un resultado se publica{' '}
-            <span className="event-code">match.result.loaded</span> en el exchange topic de RabbitMQ.
-            Tres workers lo consumen en paralelo: scoring, notifications y el encadenamiento hacia ranking via{' '}
-            <span className="event-code">scores.updated</span>.
+  return (
+    <div className="min-h-screen bg-surface text-on-surface flex">
+
+      {/* ── Sidebar ───────────────────────────────── */}
+      <aside className="hidden lg:flex flex-col w-64 fixed left-0 top-0 h-full bg-surface-container-low border-r border-outline-variant/40 z-40">
+        <div className="px-5 pt-6 pb-4">
+          <div className="text-xl font-extrabold italic tracking-tight text-secondary mb-1">
+            Pick <span className="text-orange-accent">&</span> Serve
+          </div>
+          <div className="text-xs font-bold text-orange-accent tracking-widest uppercase mb-5">Admin</div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-surface-container-high border-2 border-secondary-container flex items-center justify-center text-sm font-bold text-on-surface-variant">
+              {user.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-on-surface">{user.name}</div>
+              <div className="text-xs text-on-surface-variant">Administrador</div>
+            </div>
           </div>
         </div>
 
-        {loading ? (
-          <div className="loading"><div className="spinner" /> Cargando...</div>
-        ) : rounds.length === 0 ? (
-          <div className="empty">No hay jornadas abiertas</div>
-        ) : (
-          rounds.map(round => (
-            <div key={round.id} style={{ marginBottom: 24 }}>
-              <div className="round-header">
-                <div className="round-header-left">
-                  <div className="round-tournament">{round.tournament_name}</div>
-                  <div className="round-name">{round.name}</div>
-                </div>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => handleCloseRound(round.id)}
-                  disabled={processing === `r${round.id}`}
-                >
-                  {processing === `r${round.id}` ? (
-                    <><div className="spinner" /> Cerrando...</>
-                  ) : (
-                    <><IconLock size={13} /> Cerrar</>
-                  )}
-                </button>
+        <nav className="flex-1 flex flex-col gap-1 px-2 mt-2">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary-container text-on-secondary-container text-sm font-bold">
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>admin_panel_settings</span>
+            Panel Admin
+          </div>
+        </nav>
+
+        <div className="px-4 pb-6">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-high transition-all"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>logout</span>
+            Salir
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Mobile top bar ────────────────────────── */}
+      <nav className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-surface-container border-b border-outline-variant/40 z-50 flex items-center justify-between px-4">
+        <div>
+          <div className="text-base font-extrabold italic tracking-tight text-secondary">
+            Pick <span className="text-orange-accent">&</span> Serve
+          </div>
+          <div className="text-xs font-bold text-orange-accent">Admin</div>
+        </div>
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-on-surface px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>logout</span>
+          Salir
+        </button>
+      </nav>
+
+      {/* ── Main content ──────────────────────────── */}
+      <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 min-h-screen pb-10">
+        {/* Page header */}
+        <div className="px-4 lg:px-8 pt-6 pb-4 border-b border-outline-variant/20">
+          <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">Admin Central</h1>
+          <p className="text-sm text-on-surface-variant mt-1">Control del sistema y administración de partidos.</p>
+        </div>
+
+        <div className="px-4 lg:px-8 pt-6 flex flex-col gap-6">
+
+          {/* Metrics */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-primary text-on-primary p-5 rounded-xl border border-outline-variant/20">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold tracking-widest uppercase opacity-80">Jornadas</span>
+                <span className="material-symbols-outlined opacity-80" style={{ fontSize: 18 }}>event</span>
               </div>
-
-              {round.matches.map(match => (
-                <div key={match.id} className="admin-match-card">
-                  <div className="admin-match-header">
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>
-                        {match.player_a} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs</span> {match.player_b}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        Partido #{match.id}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      {match.is_final && <span className="final-tag">FINAL +2</span>}
-                      <span className={`pill ${match.status === 'finished' ? 'pill-open' : 'pill-pending'}`}>
-                        {match.status === 'finished' ? 'Finalizado' : 'Pendiente'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {match.status === 'pending' && (
-                    <div className="admin-result-btns">
-                      <button
-                        className={`result-btn ${match.winner_player_id === 'player_a' ? 'winner' : ''}`}
-                        onClick={() => handleResult(match.id, 'player_a')}
-                        disabled={processing === `m${match.id}`}
-                      >
-                        {processing === `m${match.id}` ? 'Procesando...' : `Gano ${match.player_a}`}
-                      </button>
-                      <button
-                        className={`result-btn ${match.winner_player_id === 'player_b' ? 'winner' : ''}`}
-                        onClick={() => handleResult(match.id, 'player_b')}
-                        disabled={processing === `m${match.id}`}
-                      >
-                        {processing === `m${match.id}` ? 'Procesando...' : `Gano ${match.player_b}`}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+              <div className="text-4xl font-extrabold tracking-tight">{rounds.length}</div>
+              <div className="text-xs opacity-70 mt-1">abiertas actualmente</div>
             </div>
-          ))
-        )}
-      </div>
+            <div className="bg-surface-container-high p-5 rounded-xl border border-outline-variant">
+              <div className="flex items-center justify-between mb-3 text-on-surface-variant">
+                <span className="text-xs font-bold tracking-widest uppercase">Partidos</span>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span>
+              </div>
+              <div className="text-4xl font-extrabold tracking-tight text-secondary-container">{totalMatches}</div>
+              <div className="text-xs text-on-surface-variant mt-1">Pendientes: {pendingMatches}</div>
+            </div>
+          </div>
+
+          {/* Event architecture info */}
+          <div className="bg-surface-container border-l-4 border-orange-accent rounded-xl p-4">
+            <div className="text-xs font-bold tracking-widest uppercase text-orange-accent mb-2">
+              Arquitectura de eventos
+            </div>
+            <div className="text-xs text-on-surface-variant leading-relaxed">
+              Al cargar un resultado se publica{' '}
+              <code className="text-orange-accent bg-orange-accent/10 px-1 rounded font-mono">match.result.loaded</code>{' '}
+              en el exchange topic de RabbitMQ. Tres workers lo consumen en paralelo: scoring, notifications y el encadenamiento hacia ranking via{' '}
+              <code className="text-orange-accent bg-orange-accent/10 px-1 rounded font-mono">scores.updated</code>.
+            </div>
+          </div>
+
+          {/* Rounds + matches */}
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-on-surface-variant text-sm">
+              <div className="spinner" /> Cargando...
+            </div>
+          ) : rounds.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant text-sm gap-3">
+              <span className="material-symbols-outlined opacity-30" style={{ fontSize: 48 }}>inbox</span>
+              No hay jornadas abiertas
+            </div>
+          ) : (
+            rounds.map(round => (
+              <div key={round.id} className="flex flex-col gap-3">
+                {/* Round header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-orange-accent tracking-wide uppercase">{round.tournament_name}</div>
+                    <div className="text-base font-bold text-on-surface">{round.name}</div>
+                  </div>
+                  <button
+                    onClick={() => handleCloseRound(round.id)}
+                    disabled={processing === `r${round.id}`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                  >
+                    {processing === `r${round.id}` ? (
+                      <><div className="spinner" style={{ borderTopColor: '#f87171' }} /> Cerrando...</>
+                    ) : (
+                      <><span className="material-symbols-outlined" style={{ fontSize: 14 }}>lock</span> Cerrar Jornada</>
+                    )}
+                  </button>
+                </div>
+
+                {/* Match cards */}
+                <div className="flex flex-col gap-2">
+                  {round.matches.map(match => (
+                    <div key={match.id} className="bg-surface-container border border-outline-variant/30 rounded-xl overflow-hidden">
+                      {/* Match header */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant/20">
+                        <div>
+                          <div className="text-sm font-semibold text-on-surface">
+                            {match.player_a} <span className="text-on-surface-variant font-normal">vs</span> {match.player_b}
+                          </div>
+                          <div className="text-xs text-on-surface-variant mt-0.5">Partido #{match.id}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {match.is_final && (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 tracking-wide">
+                              FINAL +2
+                            </span>
+                          )}
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                            match.status === 'finished'
+                              ? 'bg-green-500/10 text-green-400'
+                              : 'bg-surface-container-high text-on-surface-variant'
+                          }`}>
+                            {match.status === 'finished' ? 'Finalizado' : 'Pendiente'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Result buttons */}
+                      {match.status === 'pending' && (
+                        <div className="flex border-t border-outline-variant/20">
+                          {(['player_a', 'player_b'] as const).map((side, idx) => {
+                            const name = side === 'player_a' ? match.player_a : match.player_b;
+                            const isWinner = match.winner_player_id === side;
+                            return (
+                              <button
+                                key={side}
+                                onClick={() => handleResult(match.id, side)}
+                                disabled={processing === `m${match.id}`}
+                                className={`flex-1 py-3 text-xs font-bold transition-all ${idx === 0 ? 'border-r border-outline-variant/20' : ''} ${
+                                  isWinner
+                                    ? 'bg-green-500/10 text-green-400'
+                                    : 'text-on-surface-variant hover:bg-orange-accent/10 hover:text-orange-accent disabled:opacity-40'
+                                }`}
+                              >
+                                {processing === `m${match.id}` ? 'Procesando...' : `Ganó ${name}`}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </main>
     </div>
   );
 }
