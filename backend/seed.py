@@ -58,11 +58,12 @@ def seed():
 
         now = datetime.utcnow()
         # starts_at = cuando cierran los pronósticos (inicio de los partidos).
-        # Deben estar en el futuro para que el scheduler no las cierre inmediatamente.
-        r1 = Round(tournament_id=t1.id, name="Cuartos de Final", starts_at=now + timedelta(hours=6), status="open")
-        r2 = Round(tournament_id=t1.id, name="Semifinal", starts_at=now + timedelta(days=2), status="open")
-        r3 = Round(tournament_id=t2.id, name="Cuartos de Final", starts_at=now + timedelta(hours=8), status="open")
-        r4 = Round(tournament_id=t2.id, name="Final", starts_at=now + timedelta(days=3), status="open")
+        # Solo la primera ronda de cada torneo arranca abierta; el resto queda pending
+        # hasta que se carguen todos los resultados de la ronda anterior.
+        r1 = Round(tournament_id=t1.id, name="Octavos de Final", starts_at=now + timedelta(hours=6), status="open")
+        r2 = Round(tournament_id=t1.id, name="Cuartos de Final", starts_at=now + timedelta(days=2), status="pending")
+        r3 = Round(tournament_id=t2.id, name="Octavos de Final", starts_at=now + timedelta(hours=8), status="open")
+        r4 = Round(tournament_id=t2.id, name="Final", starts_at=now + timedelta(days=3), status="pending")
         db.add_all([r1, r2, r3, r4])
         db.commit()
         for r in [r1, r2, r3, r4]:
@@ -86,12 +87,12 @@ def seed():
             db.refresh(m)
 
         non_admin_users = [u for u in users if not u.is_admin]
+        # Pronósticos solo en jornadas abiertas (octavos de ambos torneos).
         prediction_map = [
             (matches[0], ["player_a", "player_a", "player_b", "player_a", "player_b", "player_a", "player_a", "player_b", "player_a"]),
             (matches[1], ["player_b", "player_a", "player_a", "player_b", "player_a", "player_b", "player_a", "player_a", "player_b"]),
             (matches[2], ["player_a", "player_b", "player_a", "player_a", "player_b", "player_a", "player_b", "player_a", "player_a"]),
             (matches[4], ["player_a", "player_b", "player_a", "player_b", "player_a", "player_a", "player_b", "player_a", "player_b"]),
-            (matches[5], ["player_a", "player_a", "player_b", "player_a", "player_b", "player_a", "player_a", "player_b", "player_a"]),
         ]
         for (match, preds) in prediction_map:
             for i, user in enumerate(non_admin_users):

@@ -12,8 +12,8 @@ def create_prediction(data: PredictionCreate, db: Session = Depends(get_db)):
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
     round_ = db.query(Round).filter(Round.id == match.round_id).first()
-    if round_ and round_.status == "closed":
-        raise HTTPException(status_code=400, detail="Round is closed")
+    if round_ and round_.status != "open":
+        raise HTTPException(status_code=400, detail="Round is not open for predictions")
     existing = db.query(Prediction).filter(
         Prediction.user_id == data.user_id,
         Prediction.match_id == data.match_id,

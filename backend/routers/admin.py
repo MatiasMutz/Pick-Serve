@@ -5,6 +5,7 @@ from database import get_db
 from models import Match, Round, Tournament
 from schemas import MatchOut, MatchResultRequest
 from events.publisher import publish_event
+from services.round_progression import try_advance_round
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -19,12 +20,15 @@ async def load_result(match_id: int, data: MatchResultRequest, db: Session = Dep
         raise HTTPException(status_code=404, detail="Match not found")
     if match.status == "finished":
         raise HTTPException(status_code=400, detail="Match already finished")
+    round_ = db.query(Round).filter(Round.id == match.round_id).first()
+    if not round_ or round_.status != "open":
+        raise HTTPException(status_code=400, detail="Round is not open")
     if data.winner_player_id not in ("player_a", "player_b"):
         raise HTTPException(status_code=400, detail="winner_player_id must be 'player_a' or 'player_b'")
     match.winner_player_id = data.winner_player_id
     match.status = "finished"
     db.commit()
-    round_ = db.query(Round).filter(Round.id == match.round_id).first()
+    try_advance_round(db, match.round_id)
     tournament_id = round_.tournament_id if round_ else None
     await publish_event("match.result.loaded", {
         "match_id": match.id,
