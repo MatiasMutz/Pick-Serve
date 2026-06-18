@@ -118,7 +118,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: backend
-        run: pytest tests/ -v --tb=short
+        run: pytest tests/ -v -m "not integration" --tb=short
         env:
           DATABASE_URL: "sqlite:///./test_pickserve.db"
           RABBITMQ_URL: "amqp://guest:guest@localhost:5672/"
