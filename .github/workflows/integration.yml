@@ -52,5 +52,6 @@ jobs:
       - name: Run integration tests
         run: pytest backend/tests/ -v -m "integration" --tb=short
         env:
+          PICKSERVE_INTEGRATION_TESTS: "1"
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pickserve
           RABBITMQ_URL: amqp://guest:guest@localhost:5672/
