@@ -38,9 +38,9 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pickserve
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
-      VAPID_PUBLIC_KEY: BNGfgJg0GS1xy8GybiwudStALiaqS3zsgJYtALahw-tuEJdH-rpZYGQHpu2T5q0AD0A7PWeVsnxGCQN-gfC7E94
-      VAPID_PRIVATE_KEY: GRXoWwKYZRkrhgXfJ77Z7C02yqHnO-kte6j0-W0e25g
-      VAPID_SUBJECT: mailto:admin@pickserve.com
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@pickserve.com}
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,9 +69,9 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pickserve
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
-      VAPID_PUBLIC_KEY: BNGfgJg0GS1xy8GybiwudStALiaqS3zsgJYtALahw-tuEJdH-rpZYGQHpu2T5q0AD0A7PWeVsnxGCQN-gfC7E94
-      VAPID_PRIVATE_KEY: GRXoWwKYZRkrhgXfJ77Z7C02yqHnO-kte6j0-W0e25g
-      VAPID_SUBJECT: mailto:admin@pickserve.com
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@pickserve.com}
     depends_on:
       postgres:
         condition: service_healthy

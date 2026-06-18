@@ -11,6 +11,9 @@ venv/
 # Node / frontend
 node_modules/
 dist/
+.env
+.env.*
+!.env.example
 .env.local
 
 # Docker
@@ -29,3 +32,18 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+
+# LaTeX
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
