@@ -1,0 +1,46 @@
+% ───────────────────────── PORTADA ─────────────────────────
+\begin{titlepage}
+\thispagestyle{empty}
+
+\vspace*{0.8cm}
+
+\noindent\includegraphics[height=1.4cm]{itba_logo.png}\\[14pt]
+
+{\small\scshape Instituto Tecnológico de Buenos Aires}\\[2pt]
+{\small Ingeniería Informática}\\[18pt]
+
+\noindent\rule{\linewidth}{0.4pt}\\[16pt]
+
+{\fontsize{34}{38}\selectfont\bfseries Pick \& Serve}\\[8pt]
+{\Large Una plataforma de pronósticos deportivos sobre arquitectura orientada a eventos}\\[10pt]
+{\color{muted}Eje técnico con RabbitMQ y mensajería publish/subscribe}\\[22pt]
+
+\noindent\rule{0.35\linewidth}{0.4pt}\\[14pt]
+
+{\small\scshape Ingeniería de Software II}\\[3pt]
+{\small Trabajo Práctico Integrador Final, Primer Cuatrimestre 2026}\\[28pt]
+
+\begin{minipage}[t]{0.52\linewidth}
+{\small\scshape Integrantes}\\[6pt]
+\begin{tabular}{@{}l@{\hspace{1.4cm}}r@{}}
+Borinsky, Lucila & {\footnotesize\color{muted}Leg.\ 63039}\\[2pt]
+Mutz, Matías Ignacio & {\footnotesize\color{muted}Leg.\ 63590}\\
+\end{tabular}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.42\linewidth}
+{\small\scshape Profesor}\\[6pt]
+Emilio Esteban Rasic\\[14pt]
+{\small\scshape Entrega}\\[6pt]
+18 de junio de 2026
+\end{minipage}
+
+\vfill
+
+\noindent\begin{minipage}{\linewidth}
+{\small\scshape Resumen}\\[6pt]
+\justifying\small
+Pick \& Serve digitaliza una liga privada de pronósticos de tenis que durante cuatro años funcionó con planillas de cálculo y formularios manuales. La prueba de concepto reemplaza ese flujo por un sistema desacoplado donde cada acción relevante, como cargar el resultado de un partido o cerrar una jornada, se publica como un evento en RabbitMQ y lo consumen en paralelo trabajadores independientes que puntúan, notifican y recalculan el ranking.
+\end{minipage}
+
+\end{titlepage}

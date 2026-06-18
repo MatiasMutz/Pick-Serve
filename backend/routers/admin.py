@@ -38,6 +38,11 @@ async def load_result(match_id: int, data: MatchResultRequest, db: Session = Dep
     })
     return {"ok": True, "match_id": match.id}
 
+@router.post("/demo/reset")
+async def demo_reset():
+    from seed import reseed_demo
+    return reseed_demo()
+
 @router.post("/rounds/{round_id}/close")
 async def close_round(round_id: int, db: Session = Depends(get_db)):
     round_ = db.query(Round).filter(Round.id == round_id).first()

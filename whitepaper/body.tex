@@ -1,0 +1,128 @@
+% ═══════════════════════════ CUERPO ═══════════════════════════
+
+\section{El problema y el producto}
+
+Pick \& Serve surge de un problema concreto. Hace cuatro años, unas cuarenta personas armaron una liga privada de pronósticos de tenis donde cada participante predice ganadores de partidos ATP y compite por un ranking. Hoy todo corre en planillas de cálculo y formularios de Google. Un administrador arma cada jornada a mano, corre scripts sueltos y carga resultados celda por celda. Cuando entra un resultado, hay que actualizar el puntaje de cada jugador que pronosticó, mandar las notificaciones y mover la tabla de posiciones. Se hace todo a mano, sin trazabilidad y con mucho margen de error.
+
+El sistema actual demostró que la idea funciona. Cuatro años de uso continuo validaron la demanda y afinaron las reglas del juego. El problema ya no es la idea, sino la fragilidad operativa y la dificultad de crecer. Pick \& Serve propone una plataforma web que automatiza ese ciclo. Los jugadores cargan pronósticos sobre jornadas abiertas, el administrador carga resultados, y el sistema puntúa, notifica y actualiza el ranking sin intervención manual. La prueba de concepto usa datos de partidos cargados a mano, sin scraping ni APIs externas.
+
+Cargar un resultado dispara puntuación, notificaciones y reordenamiento del ranking, y cada efecto es independiente del otro. Resolverlo de forma acoplada y síncrona escala mal y se rompe ante cualquier falla parcial. Por eso el dominio sirve bien para trabajar con mensajería publish/subscribe.
+
+\section{Eje funcional}
+
+\subsection{Funcionalidades principales}
+
+El producto gira alrededor de la jornada, que es la unidad operativa central. En la prueba de concepto implementamos lo siguiente.
+
+\begin{itemize}
+\item Carga de pronósticos. Los jugadores eligen el ganador de cada partido de las jornadas abiertas. Solo pueden hacerlo mientras la jornada está \code{open} y el partido \code{pending}. El backend valida esa condición.
+\item Carga de resultados por el administrador. Es la acción que dispara toda la cadena de eventos. Si se cierran todos los partidos de una ronda, el sistema avanza automáticamente a la siguiente.
+\item Puntuación automática. Cada pronóstico recibe 3 puntos si acierta y 2 adicionales si el partido es una final. No hay penalización por error.
+\item Ranking global en vivo. Se recalcula solo y el frontend lo refresca cada cinco segundos con posiciones, aciertos y precisión.
+\item Notificaciones. Cada jugador recibe un aviso del resultado de los partidos que pronosticó, y una notificación global cuando se cierra una jornada.
+\item Cierre de jornadas. Puede ser manual, por el administrador, o automático, cuando un scheduler cierra las jornadas vencidas sin intervención humana.
+\end{itemize}
+
+\subsection{Desacoplar como decisión de negocio}
+
+La pregunta de fondo no es qué hace el sistema, sino cómo conviene propagar un resultado. El camino síncrono calcula puntajes, genera notificaciones y reordena el ranking dentro del mismo request HTTP que carga el resultado. Es simple de escribir, pero ata el tiempo de respuesta del administrador al volumen de trabajo. Con más jugadores, partidos o consumidores, la latencia crece. Un fallo en cualquier paso, por ejemplo al enviar notificaciones, puede tumbar la operación entera o dejar el sistema inconsistente.
+
+Pick \& Serve elige el camino asíncrono y desacoplado. El administrador recibe confirmación inmediata y el trabajo pesado ocurre en segundo plano. Agregar una nueva reacción a un resultado, como enviar un resumen por correo, no obliga a tocar el código existente, sino a sumar un consumidor nuevo. Si una pieza se cae, el broker conserva los mensajes y los procesa al recuperarse, en lugar de perder datos como pasa hoy con las planillas.
+
+\subsection{Comparativa de alternativas}
+
+Para el eje técnico consideramos varias familias de herramientas. En mensajería pub/sub elegimos RabbitMQ. La Tabla~\ref{tab:comp} resume la comparación. Más detalle en el Anexo~\ref{anx:comp}.
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.22}
+\begin{tabularx}{\linewidth}{@{}l L{3.7cm} L{3.7cm} X@{}}
+\toprule
+\textbf{Opción} & \textbf{Fortaleza} & \textbf{Costo} & \textbf{Ajuste a este caso} \\
+\midrule
+RabbitMQ & Routing flexible por topic, consola de administración visual, fácil de operar & Un broker más que mantener & Alto. Volumen moderado, fan-out claro, demo visual \\
+Kafka & Throughput masivo, log persistente, replay & Operación pesada (ZooKeeper/KRaft), sobredimensionado & Bajo. Pensado para escalas que este caso no necesita \\
+Redis Pub/Sub & Latencia mínima, muy simple & Sin persistencia, si el consumidor no está el mensaje se pierde & Bajo. Rompe el requisito de no perder eventos \\
+Airflow / Prefect & Excelente para batch programado & Orientado a pipelines de datos, no a eventos & Bajo. El disparador es un hecho, no un cron \\
+\bottomrule
+\end{tabularx}
+\caption{Comparación resumida de alternativas para el eje técnico.}
+\label{tab:comp}
+\end{table}
+
+\section{Eje técnico}
+
+\subsection{Qué es RabbitMQ}
+
+RabbitMQ es un message broker que implementa el patrón publish/subscribe. Un productor publica mensajes sin saber quién los consumirá, y uno o más consumidores los reciben sin saber quién los produjo. El broker actúa como intermediario y desacopla a ambos lados. Su pieza central es el exchange, que recibe los mensajes y los enruta hacia colas según reglas llamadas bindings. Pick \& Serve usa un exchange de tipo topic, que enruta por routing keys jerárquicas como \code{match.result.loaded}. Eso permite que distintas colas se suscriban a distintos eventos con un mismo exchange.
+
+Elegimos RabbitMQ sobre Kafka porque es más simple de operar para un volumen moderado, y trae una consola de administración web en el puerto 15672 que muestra en vivo exchanges, colas y mensajes procesados.
+
+\subsection{Arquitectura general}
+
+El sistema se levanta completo con un único \code{docker compose up}. Tiene ocho servicios en contenedores, listados en la Tabla~\ref{tab:services}. El frontend React consume una API REST en FastAPI. La API publica eventos en RabbitMQ. Cuatro workers de Python, tres consumidores y un scheduler, reaccionan a esos eventos contra PostgreSQL. La Figura~\ref{anx:diag} del Anexo~\ref{anx:arq} muestra el flujo completo.
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.22}
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}l l X@{}}
+\toprule
+\textbf{Servicio} & \textbf{Puerto} & \textbf{Responsabilidad} \\
+\midrule
+postgres & 5432 & Persistencia relacional \\
+rabbitmq & 5672 / 15672 & Broker de mensajes y consola web \\
+backend & 8000 & API REST (FastAPI) y publicación de eventos \\
+scoring-worker & n/d & Calcula puntos al cargarse un resultado \\
+notification-worker & n/d & Genera notificaciones de resultado y cierre \\
+ranking-worker & n/d & Recalcula el ranking global \\
+scheduler & n/d & Cierra jornadas vencidas por tiempo \\
+frontend & 3000 & SPA React servida por nginx \\
+\bottomrule
+\end{tabularx}
+\caption{Servicios orquestados por Docker Compose.}
+\label{tab:services}
+\end{table}
+
+\subsection{Carga de un resultado}
+
+El flujo central empieza cuando el administrador llama a \code{POST /admin/matches/\{id\}/result}. El backend persiste el ganador, evalúa si la ronda debe avanzar y publica un único evento al exchange. Ahí termina su responsabilidad y responde de inmediato.
+
+\begin{lstlisting}[language=Python,caption={Publicación del evento tras cargar un resultado (\code{routers/admin.py}).}]
+await publish_event("match.result.loaded", {
+    "match_id": match.id,
+    "winner_player_id": winner_id,
+    "round_id": match.round_id,
+})
+\end{lstlisting}
+
+A partir de ese evento, RabbitMQ hace fan-out y lo entrega en paralelo a dos colas independientes.
+
+\begin{itemize}
+\item El Scoring Worker (\code{scoring.queue}) recorre las predicciones del partido y asigna puntos. Si una predicción ya tiene puntos (\code{points IS NOT NULL}), la omite. Eso garantiza idempotencia ante reenvíos. Al terminar, publica un segundo evento, \code{scores.updated}.
+\item El Notification Worker (\code{notifications.queue}) crea en paralelo una notificación por cada jugador que pronosticó ese partido.
+\end{itemize}
+
+El evento \code{scores.updated} desencadena al Ranking Worker (\code{ranking.queue}), que suma puntos por usuario, ordena y reescribe la tabla de posiciones. El Ranking Worker no sabe nada de partidos ni de predicciones. Solo reacciona cuando los puntajes cambian. Es el mismo principio que sostiene las Sagas en microservicios.
+
+\subsection{Segundo evento y disparadores múltiples}
+
+El sistema también maneja \code{round.closed}. Puede originarse de dos formas. Manualmente, cuando el administrador cierra una jornada. O automáticamente, cuando el scheduler, un contenedor con un loop de 60 segundos, detecta una jornada vencida y la cierra. En ambos casos el mismo evento llega al Notification Worker, que avisa a todos los jugadores.
+
+\subsection{Atributos de calidad y trade-offs}
+
+Los atributos de calidad más relevantes están en el Anexo~\ref{anx:calidad}.
+
+\begin{itemize}
+\item Mantenibilidad y bajo acoplamiento. Agregar un consumidor, por ejemplo un email-worker, no toca el código existente. Se suscribe a un evento que ya se publica.
+\item Escalabilidad. Si la liga crece, se suman instancias de un worker consumiendo de la misma cola y RabbitMQ reparte la carga.
+\item Disponibilidad y tolerancia a fallos. Si un worker cae, los mensajes quedan encolados y se procesan al volver. Ante un error, la planilla pierde el dato.
+\item Performance percibida. La API responde al instante. El cálculo pesado ocurre asíncrono en segundo plano.
+\end{itemize}
+
+El desacople tiene un costo operativo. Hay un broker más para mantener y depurar, y razonar sobre un flujo asíncrono es más difícil que seguir una función lineal. Para este producto, con varios efectos secundarios por cada resultado y la necesidad de no perder eventos, ese costo compensa.
+
+\section{Conclusión}
+
+Pick \& Serve reemplaza una liga de pronósticos que corría sobre planillas por una plataforma web con arquitectura orientada a eventos. Un resultado dispara puntuación, notificaciones y ranking sin que esos procesos se conozcan entre sí. RabbitMQ hace el fan-out y el encadenamiento de eventos entre workers. La elección del broker y del stack (FastAPI, React y PostgreSQL) apunta a resolver el problema actual sin cerrar la puerta a crecer después.

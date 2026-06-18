@@ -1,0 +1,144 @@
+\documentclass[11pt,a4paper]{article}
+
+% ───────────────────────── Paquetes ─────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[main=spanish,provide=*]{babel}
+\usepackage{newtxtext,newtxmath}
+\usepackage{microtype}
+\usepackage[a4paper,top=2.8cm,bottom=2.6cm,left=2.6cm,right=2.6cm,headheight=26pt,headsep=18pt,footskip=24pt]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{fancyhdr}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{ragged2e}
+\usepackage{tocloft}
+
+% ───────────────────────── Paleta ─────────────────────────
+\definecolor{ink}{HTML}{1A1A1A}
+\definecolor{muted}{HTML}{5C6670}
+\definecolor{rule}{HTML}{C8CDD2}
+\definecolor{notebg}{HTML}{F7F8F9}
+\definecolor{codebg}{HTML}{F3F4F6}
+\definecolor{codekw}{HTML}{2F4F6F}
+\definecolor{codestr}{HTML}{2E5E3E}
+\definecolor{codecmt}{HTML}{7A828C}
+
+\color{ink}
+
+% ───────────────────────── Índice ─────────────────────────
+\setlength{\cftsecnumwidth}{2.2em}
+\setlength{\cftsubsecnumwidth}{2.6em}
+\renewcommand{\cftsecfont}{\bfseries}
+\renewcommand{\cftsecpagefont}{\bfseries}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftsecdotsep}}
+\renewcommand{\cftsecdotsep}{4}
+\setlength{\cftbeforesecskip}{6pt}
+
+% ───────────────────────── Títulos ─────────────────────────
+\titleformat{\section}
+  {\large\bfseries}
+  {\thesection.\hspace{0.4em}}{0em}
+  {}[\vspace{2pt}{\color{rule}\titlerule[0.4pt]}]
+\titlespacing*{\section}{0pt}{14pt}{7pt}
+
+\titleformat{\subsection}
+  {\normalsize\bfseries}
+  {\thesubsection\hspace{0.5em}}{0em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{3pt}
+
+\titleformat{\subsubsection}[runin]
+  {\normalsize\bfseries}
+  {}{0em}{}[\hspace{0.5em}]
+\titlespacing*{\subsubsection}{0pt}{6pt}{0.6em}
+
+% ───────────────────────── Encabezado / Pie ─────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancyhead[L]{\raisebox{-0.12cm}{\includegraphics[height=0.85cm]{itba_logo.png}}\hspace{0.35cm}{\small\scshape Pick \& Serve}}
+\fancyhead[R]{\small\color{muted}Ingeniería de Software II, ITBA}
+\fancyhead[C]{}
+
+\fancyfoot[L]{\small\color{muted}Lucila Borinsky \& Matías Mutz}
+\fancyfoot[C]{\small\color{muted}\thepage}
+\fancyfoot[R]{\small\color{muted}Emilio Rasic}
+
+\renewcommand{\headrule}{{\color{rule}\hrule height 0.4pt}}
+
+% ───────────────────────── Listas ─────────────────────────
+\setlist[itemize]{leftmargin=1.3em,itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{leftmargin=1.6em,itemsep=2pt,topsep=3pt}
+
+% ───────────────────────── Captions ─────────────────────────
+\captionsetup{font={small,color=muted},labelfont={bf,color=ink},skip=5pt,width=0.92\linewidth}
+
+% ───────────────────────── Listings ─────────────────────────
+\lstdefinestyle{psstyle}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize\color{ink},
+  keywordstyle=\color{codekw}\bfseries,
+  stringstyle=\color{codestr},
+  commentstyle=\color{codecmt}\itshape,
+  numberstyle=\tiny\color{codecmt},
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{rule},
+  xleftmargin=10pt,
+  xrightmargin=6pt,
+  aboveskip=8pt,
+  belowskip=6pt,
+  breaklines=true,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true,
+}
+\lstset{style=psstyle}
+
+% ───────────────────────── Helpers ─────────────────────────
+\newcommand{\notebox}[2]{%
+  \vspace{2pt}%
+  \noindent\begin{minipage}{\linewidth}
+  \setlength{\fboxsep}{10pt}
+  \colorbox{notebg}{%
+    \begin{minipage}{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+    {\small\scshape #1}\\[4pt]
+    \small #2
+    \end{minipage}}
+  \end{minipage}%
+  \vspace{2pt}}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\code}[1]{{\ttfamily\small #1}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4.5pt}
+\renewcommand{\arraystretch}{1}
+\setlength{\extrarowheight}{3pt}
+
+% ════════════════════════════════════════════════════════════
+\begin{document}
+
+\input{cover}
+
+\thispagestyle{fancy}
+\renewcommand{\contentsname}{Índice}
+{\hypersetup{linkcolor=ink}
+\tableofcontents}
+\clearpage
+
+\input{body}
+\input{annex}
+
+\end{document}

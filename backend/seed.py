@@ -109,3 +109,65 @@ def seed():
         logger.info("✅ Seed complete!")
     finally:
         db.close()
+
+
+def reseed_demo():
+    """Add a fresh demo tournament with open rounds, only if no open rounds exist."""
+    db = SessionLocal()
+    try:
+        if db.query(Round).filter(Round.status == "open").first():
+            return {"skipped": True, "reason": "ya existen jornadas abiertas"}
+
+        logger.info("🌱 Adding demo tournament...")
+        users = db.query(User).filter(User.is_admin == False).all()
+        now = datetime.utcnow()
+
+        t = Tournament(name="ATP Masters 1000 - Madrid", level="ATP Masters 1000")
+        db.add(t)
+        db.commit()
+        db.refresh(t)
+
+        r1 = Round(tournament_id=t.id, name="Cuartos de Final",
+                   starts_at=now + timedelta(hours=6), status="open")
+        r2 = Round(tournament_id=t.id, name="Semifinal",
+                   starts_at=now + timedelta(days=1), status="pending")
+        r3 = Round(tournament_id=t.id, name="Final",
+                   starts_at=now + timedelta(days=2), status="pending")
+        db.add_all([r1, r2, r3])
+        db.commit()
+        for r in [r1, r2, r3]:
+            db.refresh(r)
+
+        matches_data = [
+            (r1.id, PLAYERS["alcaraz"],   PLAYERS["sinner"],    False),
+            (r1.id, PLAYERS["djokovic"],  PLAYERS["medvedev"],  False),
+            (r1.id, PLAYERS["zverev"],    PLAYERS["rublev"],    False),
+            (r2.id, PLAYERS["tsitsipas"], PLAYERS["fritz"],     False),
+            (r2.id, PLAYERS["paul"],      PLAYERS["ruud"],      False),
+            (r3.id, PLAYERS["alcaraz"],   PLAYERS["djokovic"],  True),
+        ]
+        matches = []
+        for (rid, pa, pb, is_final) in matches_data:
+            m = Match(round_id=rid, player_a=pa, player_b=pb, is_final=is_final)
+            db.add(m)
+            matches.append(m)
+        db.commit()
+        for m in matches:
+            db.refresh(m)
+
+        prediction_map = [
+            (matches[0], ["player_a","player_b","player_a","player_a","player_b","player_a","player_b","player_a","player_a"]),
+            (matches[1], ["player_b","player_a","player_a","player_b","player_a","player_b","player_a","player_a","player_b"]),
+            (matches[2], ["player_a","player_a","player_b","player_a","player_b","player_a","player_a","player_b","player_a"]),
+        ]
+        for (match, preds) in prediction_map:
+            for i, user in enumerate(users):
+                if i < len(preds):
+                    p = Prediction(user_id=user.id, match_id=match.id, predicted_winner=preds[i])
+                    db.add(p)
+        db.commit()
+
+        logger.info("✅ Demo reseed complete!")
+        return {"skipped": False, "tournament": t.name, "rounds": 3, "matches": 6}
+    finally:
+        db.close()
