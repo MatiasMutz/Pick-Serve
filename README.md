@@ -1,7 +1,17 @@
 # 🎾 Pick & Serve
 
 **Plataforma de pronósticos de tenis ATP con arquitectura PUB/SUB en RabbitMQ**
-*Trabajo Práctico — Ingeniería de Software II*
+
+*Trabajo Práctico Integrador Final — Ingeniería de Software II · Primer Cuatrimestre 2026*
+
+**Instituto Tecnológico de Buenos Aires** · Ingeniería Informática
+
+| | |
+|---|---|
+| **Integrantes** | Lucila Borinsky (Leg. 63039) · Matías Ignacio Mutz (Leg. 63590) |
+| **Profesor** | Emilio Esteban Rasic |
+| **Entrega** | 18 de junio de 2026 |
+| **Presentación y Defensa** | 25 de junio de 2026 |
 
 ---
 
@@ -79,7 +89,7 @@ El eje técnico es la **arquitectura orientada a eventos**: un solo evento dispa
  POST /admin/rounds/{id}/close ──┐
                                  ├──► round.closed ──► notifications.round.queue
  Scheduler (poll cada 60s) ──────┘                              │
-                                                                 ▼
+                                                                ▼
                                                   notification-worker
                                                   (notifica cierre global)
 ```
@@ -377,4 +387,4 @@ Si cerraste todas las jornadas y querés volver a empezar:
 
 ---
 
-*PoC — Ingeniería de Software II · Pick & Serve*
+*Ingeniería de Software II · ITBA · 2026*
