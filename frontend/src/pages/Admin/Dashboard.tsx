@@ -53,6 +53,24 @@ export default function AdminDashboard({ user, onLogout, showToast }: Props) {
     }
   };
 
+  const handleResetDemo = async () => {
+    if (!window.confirm('¿Crear un nuevo torneo demo? Solo funciona si no hay jornadas abiertas.')) return;
+    setProcessing('reset');
+    try {
+      const result = await api.resetDemo();
+      if (result.skipped) {
+        showToast(result.reason ?? 'No se pudo resetear la demo', 'error');
+      } else {
+        showToast(`Demo creada: ${result.tournament} (${result.matches} partidos)`);
+        await load();
+      }
+    } catch (e: any) {
+      showToast(e.message || 'Error', 'error');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   const totalMatches = rounds.reduce((acc, r) => acc + r.matches.length, 0);
   const pendingMatches = rounds.reduce((acc, r) => acc + r.matches.filter(m => m.status === 'pending').length, 0);
 
@@ -142,6 +160,30 @@ export default function AdminDashboard({ user, onLogout, showToast }: Props) {
             </div>
           </div>
 
+          {/* Demo reset */}
+          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="text-xs font-bold tracking-widest uppercase text-secondary-container mb-1">
+                Reset demo
+              </div>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Crea un torneo ATP Masters 1000 con jornadas y pronósticos de prueba.
+                Disponible solo cuando no hay jornadas abiertas.
+              </p>
+            </div>
+            <button
+              onClick={handleResetDemo}
+              disabled={processing === 'reset' || rounds.length > 0}
+              className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-secondary-container text-on-secondary-container hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {processing === 'reset' ? (
+                <><div className="spinner" style={{ borderTopColor: 'currentColor' }} /> Creando...</>
+              ) : (
+                <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>restart_alt</span> Resetear demo</>
+              )}
+            </button>
+          </div>
+
           {/* Event architecture info */}
           <div className="bg-surface-container border-l-4 border-orange-accent rounded-xl p-4">
             <div className="text-xs font-bold tracking-widest uppercase text-orange-accent mb-2">
@@ -163,7 +205,8 @@ export default function AdminDashboard({ user, onLogout, showToast }: Props) {
           ) : rounds.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant text-sm gap-3">
               <span className="material-symbols-outlined opacity-30" style={{ fontSize: 48 }}>inbox</span>
-              No hay jornadas abiertas
+              <span>No hay jornadas abiertas</span>
+              <span className="text-xs opacity-70">Usá &quot;Resetear demo&quot; arriba para crear un torneo nuevo.</span>
             </div>
           ) : (
             rounds.map(round => (

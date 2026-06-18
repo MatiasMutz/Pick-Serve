@@ -60,6 +60,12 @@ export const api = {
       method: 'POST',
     }),
 
+  resetDemo: () =>
+    request<{ skipped: boolean; reason?: string; tournament?: string; rounds?: number; matches?: number }>(
+      '/admin/demo/reset',
+      { method: 'POST' },
+    ),
+
   getVapidPublicKey: () => request<{ public_key: string }>('/push/vapid-public-key'),
 
   subscribePush: (user_id: number, subscription: PushSubscriptionPayload) =>
